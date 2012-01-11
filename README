@@ -6,3 +6,4 @@ A collection of bioinformatics scripts for tasks such as:
 * Uniprot / BLAST analysis and XML parsing
 * AMOS parsing
 * ORF and GO->OBO analysis
+* Reg-ex conversion script for cis-element plant DB, PLACE.
