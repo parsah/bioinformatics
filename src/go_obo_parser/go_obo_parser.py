@@ -40,7 +40,8 @@ def parse_obo(go_xml):
 
 
 def execute(file_obo, file_blast):
-	xml_results = parse_obo(file_obo)
+	#xml_results = parse_obo(file_obo)
+	print parse_obo(file_obo)
 
 if __name__ == '__main__':
 	file_obo, file_blast = parse_arguments()

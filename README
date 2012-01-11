@@ -1,0 +1,7 @@
+README -  by Parsa Hosseini [Parsa.Hosseini@ars.usda.gov]
+
+* A collection of bioinformatics scripts for tasks such as:
+* RNA-Seq tag-multiplex counting
+* Uniprot / BLAST analysis and XML parsing
+* AMOS parsing
+* ORF and GO->OBO analysis
