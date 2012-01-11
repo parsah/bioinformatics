@@ -10,36 +10,56 @@ not.
 '''
 
 import argparse
+from Bio.Blast import NCBIXML
+from Bio import SeqIO
+import multiprocessing
 import os
 import tempfile
 import time
 
+
+
+# words to filter from annotations 
+AMBIGIOUS_KEYWORDS = ['hypothetical', 'putative', 'unknown', 'unnamed', 'predicted', 
+					'uncharacterized']
+CURR_BLAST_HIT = 0
+
+
 # represents all the files and states pertaining to the analysis
 class Analysis_Bucket():
-	def __init__(self, fasta_file, ref, be_db, bp_up, bp_down):
+	def __init__(self, fasta_file, ref, be_db, bp_up, bp_down, evalue, num_proc, executable):
 		self.fasta_file = fasta_file
 		self.ref_genome = ref
 		self.be_db = be_db
 		self.bp_up = bp_up
 		self.bp_down = bp_down
+		self.evalue = evalue
+		self.num_proc = num_proc
+		self.blast_exec = executable
+		self.blast_exec_dir = os.path.dirname(self.blast_exec)+'/'
 		self.output_temp_dir = tempfile.mkdtemp(dir=os.getcwd())
+		self.num_entries = 0
 	
 	@staticmethod
 	def new_segment_line():
-		return '*'*40
+		return '\n'+'*'*40
 		
 	def __str__(self):
-		return 'Binding Element Search Script - ['+str(time.asctime())+']\n'+\
+		return 'Input parameters:\n'+\
+			'Binding Element Search Script - ['+str(time.asctime())+']\n'+\
 			'Fasta file: '+str(self.fasta_file)+'\n'+\
 			'Reference genome: '+str(self.ref_genome)+'\n'+\
 			'Binding Element (BE) DB: '+str(self.be_db)+'\n'+\
 			'up-stream bp: '+str(self.bp_up)+'\n'+\
 			'down-stream bp: '+str(self.bp_down)+'\n'+\
+			'BLAST e-value: '+str(self.evalue)+'\n'+\
+			'BLAST location: '+str(self.blast_exec)+'\n'+\
+			'#/processes: '+str(self.num_proc)+'\n'+\
 			Analysis_Bucket.new_segment_line()
 	
 	
 	def is_param_valid(self):
-		print '### Checking validity of input files: ###'
+		print '--- Checking validity of input files: ---'
 		is_valid = os.path.exists(self.fasta_file)
 		# check to see if fasta file is found
 		if is_valid is False:
@@ -57,14 +77,14 @@ class Analysis_Bucket():
 		
 		# stdout status of validity
 		if is_valid:
-			print 'VALID: Input parameters all valid. Proceeding with analysis.'	
+			print 'VALID: Input parameters all valid. Continuing-on with analysis.'	
 		else:
 			print 'INVALID: Input parameters invalid. Please refer to message above.'	
 		return is_valid
 
 	def parse_fasta(self, fasta_file):
 		print Analysis_Bucket.new_segment_line()
-		print '### Parsing fasta file and beginning analysis ###'
+		print '--- Parsing fasta file and beginning analysis ---'
 		entries = {}
 		for line in open(self.fasta_file):
 			line = line.strip()
@@ -77,13 +97,70 @@ class Analysis_Bucket():
 				else:
 					entries[header]+=line
 		
-		print '#/fasta entries parsed:',len(entries)
-		os.rmdir(self.output_temp_dir)
+		self.num_entries = len(entries)
+		print '#/fasta entries parsed:', self.num_entries
+		return entries
+		
 
-	# for each fasta entry, blast against reference genome
-	def run_analysis(self):
-		# first, parse the fasta file
-		self.parse_fasta(self.fasta_file)
+# for each fasta entry, blast against reference genome
+def run_analysis(obj_analysis):
+	# first, parse the fasta file
+	entries = obj_analysis.parse_fasta(obj_analysis.fasta_file)
+	pool = multiprocessing.Pool(processes=obj_analysis.num_proc)
+	print '#/processes created:', obj_analysis.num_proc
+	for each_fasta in entries:
+		seq = entries[each_fasta]
+		header = each_fasta.replace('>', '')
+		pool.apply_async(func=run_blast, args=(header, seq, obj_analysis), callback=callback_stdout)
+		
+	pool.close()
+	pool.join()
+	pool.terminate()
+
+def callback_stdout(return_from_blast):
+	global CURR_BLAST_HIT
+	CURR_BLAST_HIT+=1
+	fasta_id = return_from_blast['fasta_id']
+	obj_analysis = return_from_blast['curr_obj']
+	xml_filename = return_from_blast['xml_file']
+	
+	print CURR_BLAST_HIT,'/', obj_analysis.num_entries, process_blast_xml(fasta_id, xml_filename)
+
+def process_blast_xml(fasta_id, xml_filename):
+	records = NCBIXML.parse(open(xml_filename))
+	all_hits = [] # represents all the hits per fasta id
+	for blast_records in records:
+		for alignment in blast_records.alignments:
+			for hsp in alignment.hsps:
+				# ALTER THIS BASED ON HOW MANY DELIMITERS ARE IN THE BLAST DB
+				# BELOW IS GOOD IFF TITLE IS: 
+				# >gi|18411468|ref|NP_567197.1| a protein [A. thaliana]
+				#					-- accn --  ------- desc ---------
+				
+				title = alignment.title.split('|')
+				desc = title[-1]
+				accn = title[-2]
+				all_hits.append([str(accn), str(desc), float(hsp.expect), float(hsp.score), hsp.sbjct_start, hsp.sbjct_end])
+	return all_hits
+
+def run_blast(fasta_id, fasta_seq, obj_analysis):
+	fasta_id = fasta_id.replace('|', '_')
+	blast_exec_dir = obj_analysis.blast_exec_dir
+	fasta_file = create_fasta_file(fasta_id, fasta_seq, obj_analysis)
+	xml_file = obj_analysis.output_temp_dir+'/'+fasta_id+'.xml'
+	cmd = blast_exec_dir+"blastn -db " + obj_analysis.ref_genome +\
+		' -query ' + fasta_file + ' -evalue ' +str(obj_analysis.evalue) +\
+		' -outfmt 5 ' + ' -out ' + xml_file + ' -num_alignments 3'
+	os.system(cmd) # execute the local-blast command
+	return {'fasta_id': fasta_id, 'curr_obj': obj_analysis, 'xml_file':xml_file}
+
+def create_fasta_file(fasta_id, fasta_seq, obj_analysis):
+	filename = obj_analysis.output_temp_dir+'/'+fasta_id+'.fasta'
+	out_handle = open(filename, 'w')
+	out_handle.write('>'+fasta_id[1:]+'\n'+str(fasta_seq)+'\n')
+	out_handle.flush()
+	out_handle.close()
+	return filename
 
 if __name__ == '__main__':
 	str_epilog = 'Ex: python driver.py Fasta_file Ref_genome Be_db -u 2000 -d 200'
@@ -93,17 +170,26 @@ if __name__ == '__main__':
 		' are analyzed for the presence of BEs. Such BEs are from a user-provided'+\
 		' dictionary.'
 	p = argparse.ArgumentParser(description=str_desc, epilog=str_epilog)
-	p.add_argument('-i','-input', help='Input fasta file; fasta [required]',required=True)
-	p.add_argument('-r','-ref', help='Reference genome BLAST DB; fasta [required]', required=True)
-	p.add_argument('-b','-be', help='Binding Element DB [required]', required=True)
+	# required params
+	p.add_argument('-i','-input', help='Input fasta file; fasta [REQUIRED]',required=True)
+	p.add_argument('-r','-ref', help='Reference genome BLAST DB; fasta [REQUIRED]', required=True)
+	p.add_argument('-b','-be', help='Binding Element DB [REQUIRED]', required=True)
+	p.add_argument('-x','-blastn', help='BLASTN executable [REQUIRED]',required=True)
+	
+	# optional params
+	p.add_argument('-e','-evalue', help='BLAST e-value <def: 1e5>', default=1e5)
+	p.add_argument('-n','-num_proc', help='#/processes <def: 2>', default=2,type=int)	
 	p.add_argument('-u', '-up', help='up-stream bp <def: 2000>', default=2000, type=int)
 	p.add_argument('-d', '-down', help='down-stream bp <def: 200>', default=200, type=int)
 	
+	
 	args = p.parse_args()
-	analysis_obj = Analysis_Bucket(args.i, args.r, args.b, args.u, args.d)
+	analysis_obj = Analysis_Bucket(fasta_file=args.i, ref=args.r, be_db=args.b, 
+			bp_up=args.u, bp_down=args.d, evalue=args.e, num_proc=args.n, 
+			executable=args.x)
 	print analysis_obj
 	if analysis_obj.is_param_valid(): # if input is valid, process or stop
-		analysis_obj.run_analysis()
+		run_analysis(analysis_obj)
 	
-	
+	os.rmdir(analysis_obj.output_temp_dir)
 	
