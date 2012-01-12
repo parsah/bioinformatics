@@ -11,17 +11,15 @@ not.
 
 import argparse
 from Bio.Blast import NCBIXML
-from Bio import SeqIO
 import multiprocessing
 import os
 import tempfile
 import time
 
-
-
 # words to filter from annotations 
 AMBIGIOUS_KEYWORDS = ['hypothetical', 'putative', 'unknown', 'unnamed', 'predicted', 
 					'uncharacterized']
+BLAST_RESULTS = []
 CURR_BLAST_HIT = 0
 
 
@@ -124,7 +122,9 @@ def callback_stdout(return_from_blast):
 	obj_analysis = return_from_blast['curr_obj']
 	xml_filename = return_from_blast['xml_file']
 	
-	print CURR_BLAST_HIT,'/', obj_analysis.num_entries, process_blast_xml(fasta_id, xml_filename)
+	blast_results = process_blast_xml(fasta_id, xml_filename)
+	
+	print 'here:',CURR_BLAST_HIT,'/', obj_analysis.num_entries
 
 def process_blast_xml(fasta_id, xml_filename):
 	records = NCBIXML.parse(open(xml_filename))
@@ -139,9 +139,14 @@ def process_blast_xml(fasta_id, xml_filename):
 				
 				title = alignment.title.split('|')
 				desc = title[-1]
+				desc = desc.split(' ')[-1]
 				accn = title[-2]
-				all_hits.append([str(accn), str(desc), float(hsp.expect), float(hsp.score), hsp.sbjct_start, hsp.sbjct_end])
-	return all_hits
+				all_hits.append([str(accn), str(desc), float(hsp.expect),
+					float(hsp.score), float(hsp.sbjct_start), float(hsp.sbjct_end)])
+	
+	# sort list so hits at different hsps are in-order
+	all_hits = sorted(all_hits, key= lambda x: x[2])
+	return all_hits[0] # return hit with best e-value
 
 def run_blast(fasta_id, fasta_seq, obj_analysis):
 	fasta_id = fasta_id.replace('|', '_')
