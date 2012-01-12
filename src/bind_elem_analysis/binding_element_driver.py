@@ -19,7 +19,7 @@ import time
 # words to filter from annotations 
 AMBIGIOUS_KEYWORDS = ['hypothetical', 'putative', 'unknown', 'unnamed', 'predicted', 
 					'uncharacterized']
-BLAST_RESULTS = []
+HITS = {}
 CURR_BLAST_HIT = 0
 
 
@@ -98,8 +98,37 @@ class Analysis_Bucket():
 		self.num_entries = len(entries)
 		print '#/fasta entries parsed:', self.num_entries
 		return entries
-		
-
+	
+	def process_blast_results(self):
+		global HITS
+		print '\nParsing BLAST results:'
+		for counter in HITS:
+			top_hit = HITS[counter]
+			start, end, chrom = top_hit['start'], top_hit['end'], top_hit['chrom']
+			accn, evalue = top_hit['accn'], top_hit['e_val']
+			score, fasta = top_hit['score'], top_hit['fasta']
+			if end < start: # reverse strand (-)
+				print counter, ')' ,fasta, 'maps to chrom.', chrom, 'from',\
+					start, '->', end, '[-]\t', start-end,'bps.'
+			else: # forward strand (+)
+				print counter, ')' ,fasta, 'maps to chrom.', chrom, 'from',\
+					start, '->', end, '[+]', end-start, 'bps.'	
+					
+	def ref_genome_split(self):
+		filename, header = '', ''
+		print self.output_temp_dir
+		for line in open(self.ref_genome):
+			line = line.strip()
+			if '>' in line:
+				line = line.replace('>', '')
+				header = line
+				filename = open(self.output_temp_dir+'/'+line, 'w+')
+				filename.write('>'+header+'\n')
+				print 'added', header
+			else:
+				filename.write(line+'\n')
+				filename.flush()
+			
 # for each fasta entry, blast against reference genome
 def run_analysis(obj_analysis):
 	# first, parse the fasta file
@@ -116,15 +145,21 @@ def run_analysis(obj_analysis):
 	pool.terminate()
 
 def callback_stdout(return_from_blast):
-	global CURR_BLAST_HIT
+	global CURR_BLAST_HIT, HITS
 	CURR_BLAST_HIT+=1
 	fasta_id = return_from_blast['fasta_id']
 	obj_analysis = return_from_blast['curr_obj']
 	xml_filename = return_from_blast['xml_file']
+	fasta_filename = return_from_blast['fasta_file']
 	
 	blast_results = process_blast_xml(fasta_id, xml_filename)
+	# store blast result as hash; pointed by its sequence ID number.
+	HITS[CURR_BLAST_HIT] = blast_results
+	print CURR_BLAST_HIT,'/', obj_analysis.num_entries,'[OK]' # progress output
 	
-	print 'here:',CURR_BLAST_HIT,'/', obj_analysis.num_entries
+	# delete xml and fasta filenames
+	os.remove(xml_filename)
+	os.remove(fasta_filename)
 
 def process_blast_xml(fasta_id, xml_filename):
 	records = NCBIXML.parse(open(xml_filename))
@@ -142,11 +177,13 @@ def process_blast_xml(fasta_id, xml_filename):
 				desc = desc.split(' ')[-1]
 				accn = title[-2]
 				all_hits.append([str(accn), str(desc), float(hsp.expect),
-					float(hsp.score), float(hsp.sbjct_start), float(hsp.sbjct_end)])
+					float(hsp.score), int(hsp.sbjct_start), int(hsp.sbjct_end), fasta_id])
 	
 	# sort list so hits at different hsps are in-order
-	all_hits = sorted(all_hits, key= lambda x: x[2])
-	return all_hits[0] # return hit with best e-value
+	all_hits = sorted(all_hits, key= lambda x: x[2])[0]
+	all_hits = dict(zip(['accn', 'chrom', 'e_val', 'score', 'start', 'end', 'fasta'], all_hits))
+	
+	return all_hits # return hit with best e-value
 
 def run_blast(fasta_id, fasta_seq, obj_analysis):
 	fasta_id = fasta_id.replace('|', '_')
@@ -157,7 +194,7 @@ def run_blast(fasta_id, fasta_seq, obj_analysis):
 		' -query ' + fasta_file + ' -evalue ' +str(obj_analysis.evalue) +\
 		' -outfmt 5 ' + ' -out ' + xml_file + ' -num_alignments 3'
 	os.system(cmd) # execute the local-blast command
-	return {'fasta_id': fasta_id, 'curr_obj': obj_analysis, 'xml_file':xml_file}
+	return {'fasta_id': fasta_id, 'curr_obj': obj_analysis, 'xml_file':xml_file, 'fasta_file': fasta_file}
 
 def create_fasta_file(fasta_id, fasta_seq, obj_analysis):
 	filename = obj_analysis.output_temp_dir+'/'+fasta_id+'.fasta'
@@ -187,7 +224,6 @@ if __name__ == '__main__':
 	p.add_argument('-u', '-up', help='up-stream bp <def: 2000>', default=2000, type=int)
 	p.add_argument('-d', '-down', help='down-stream bp <def: 200>', default=200, type=int)
 	
-	
 	args = p.parse_args()
 	analysis_obj = Analysis_Bucket(fasta_file=args.i, ref=args.r, be_db=args.b, 
 			bp_up=args.u, bp_down=args.d, evalue=args.e, num_proc=args.n, 
@@ -195,6 +231,13 @@ if __name__ == '__main__':
 	print analysis_obj
 	if analysis_obj.is_param_valid(): # if input is valid, process or stop
 		run_analysis(analysis_obj)
+	
+	
+	# split genome into reference chromosomes; easy parsing
+	analysis_obj.ref_genome_split()
+	
+	# when complete, process results and map to corresponding chromosome
+	analysis_obj.process_blast_results()
 	
 	os.rmdir(analysis_obj.output_temp_dir)
 	
