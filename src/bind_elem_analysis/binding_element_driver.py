@@ -115,19 +115,23 @@ class Analysis_Bucket():
 					start, '->', end, '[+]', end-start, 'bps.'	
 					
 	def ref_genome_split(self):
+		print 'Slicing reference genome into chromosomes. Please wait...'
 		filename, header = '', ''
-		print self.output_temp_dir
 		for line in open(self.ref_genome):
 			line = line.strip()
-			if '>' in line:
+			if '>' in line and 'Gm' in line:
 				line = line.replace('>', '')
 				header = line
 				filename = open(self.output_temp_dir+'/'+line, 'w+')
 				filename.write('>'+header+'\n')
-				print 'added', header
+				print '\t-> slicing-out',header
 			else:
 				filename.write(line+'\n')
 				filename.flush()
+		for i in os.listdir(self.output_temp_dir):
+			handle = open(self.output_temp_dir+'/'+ i)
+			handle.close()
+		print '[OK]'
 			
 # for each fasta entry, blast against reference genome
 def run_analysis(obj_analysis):
