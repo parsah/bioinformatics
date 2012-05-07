@@ -8,8 +8,6 @@ AMBIGIOUS_KEYWORDS = ['hypothetical', 'putative', 'unknown', 'unnamed', 'predict
 					'uncharacterized']
 
 # points to ncbi bin folder
-BLAST_EXECUTABLE_DIR = '/ncbi-blast-2.2.25+/bin/'
-BLAST_PROG = ''
 BLAST_EVALUE = ''
 
 DB_FOLDER, DB_NAME = '', ''
@@ -83,7 +81,7 @@ def process_blast_xml(fasta_id, xml_filename):
 def run_blast(fasta_id, fasta_seq):
 	fasta_file = create_fasta_file(fasta_id, fasta_seq)
 	xml_file = DB_FOLDER+'/'+fasta_id+'.xml'
-	cmd = BLAST_EXECUTABLE_DIR+BLAST_PROG+" -db " + DB_FOLDER+'/'+DB_NAME +\
+	cmd = BLAST_PROG+" -db " + DB_FOLDER+'/'+DB_NAME +\
 		' -query ' + fasta_file + ' -evalue ' +str(BLAST_EVALUE) +\
 		' -outfmt 5 ' + ' -out ' + xml_file + ' -num_alignments 3'
 	os.system(cmd) # execute the local-blast command
@@ -120,7 +118,7 @@ def execute_program():
 	base_infile = base_infile[0:base_infile.index('.')]
 	base_db = os.path.basename(DB_NAME)
 	base_db = base_db[0:base_db.index('.')]
-	out_file = DB_FOLDER+'/'+base_infile+'__vs__'+base_db+'__'+BLAST_PROG+'.txt'
+	out_file = DB_FOLDER+'/'+base_infile+'__vs__'+base_db+'__'+'.txt'
 	global OUT_HANDLE
 	OUT_HANDLE = open(out_file, 'w')
 	
@@ -159,6 +157,7 @@ if __name__ == '__main__':
 	DB_FOLDER = parser.db_folder
 	if all([BLAST_EVALUE, BLAST_PROG, NUM_PROCESSES,INPUT_FILE,\
 			DB_FOLDER]):
+		print BLAST_EVALUE, os.path.isfile(BLAST_PROG), BLAST_PROG
 		execute_program()
 	else:
 		print '[ERROR] >=1 parameters are required:'
