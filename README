@@ -1,9 +1,17 @@
-README -  by Parsa Hosseini [Parsa.Hosseini@ars.usda.gov] - Jan. 2012
+## Frequently used bioinformatics scripts
 
-A collection of bioinformatics scripts for tasks such as:
+## by Parsa Hosseini [Parsa.Hosseini@ars.usda.gov]
+
+(Last update: May. 2012)
+
+### A collection of bioinformatics scripts for tasks such as:
 
 * RNA-Seq tag-multiplex counting
+
 * Uniprot / BLAST analysis and XML parsing
+
 * AMOS parsing
+
 * ORF and GO->OBO analysis
+
 * Reg-ex conversion script for cis-element plant DB, PLACE.
