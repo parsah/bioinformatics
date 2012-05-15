@@ -78,7 +78,7 @@ def get_best_hit(results):
 
 def blast_seq(fasta):
 	try:
-		output = NCBIWWW.qblast(program=PROG, database=DB, sequence=fasta.seq, expect=E_VAL)
+		output = NCBIWWW.qblast(program=PROG, database=DB, sequence=fasta.seq, expect=E_VAL, descriptions=2)
 		xml_output = output.read() # xml output is an xml file
 		
 		xml_filename = OUT_XML_DIR+fasta.id+'.xml'
