@@ -9,7 +9,7 @@ from Bio.Blast import NCBIWWW
 from Bio.Blast import NCBIXML
 import multiprocessing
 from multiprocessing import Pool
-import time
+import time, os
 
 # BLAST VARIABLES
 DB = 'nr'
@@ -30,7 +30,7 @@ NUM_RECORDS = 0 # assigned while file is read
 IN_FILE = 'seqs.fasta'
 # each successful blast will have its XML stored in a directory. This directory
 # will then be parsed to fetch corresponding hits/results.
-OUT_XML_DIR = '/blast_dir/'
+OUT_XML_DIR = 'blast_dir/'
 
 def parse_results(records):
 	# iterate through each hit and print its information
@@ -78,7 +78,7 @@ def get_best_hit(results):
 
 def blast_seq(fasta):
 	try:
-		output = NCBIWWW.qblast(program=PROG, database=DB, sequence=fasta.seq, expect=E_VAL, descriptions=2)
+		output = NCBIWWW.qblast(program=PROG, database=DB, sequence=fasta.seq, expect=E_VAL)
 		xml_output = output.read() # xml output is an xml file
 		
 		xml_filename = OUT_XML_DIR+fasta.id+'.xml'
@@ -134,6 +134,7 @@ def process_hits():
 		
 if __name__ == '__main__':
 	try:
+		os.mkdir(OUT_XML_DIR) # create the output folder
 		init_blast() # use multiple processes to run blast
 #		process_hits() # results are then fetched and saved to the txt file
 		print 'analysis complete', time.asctime()
