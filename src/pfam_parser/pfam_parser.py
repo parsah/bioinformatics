@@ -10,13 +10,23 @@ import os.path
 
 def parse_blast(options):
 	in_file = options.in_file # parse-in the user-provided input file
+	results = [] # represents a list glyma -> PFAM ID mappings
 	if (os.path.isfile(in_file)):
 		handle = open(in_file) # read-in the user-provided file
 		for line in handle:
 			line = line.strip().split('\t')
 			glyma, pfam_block = str(line[0]), str(line[2])
-			print glyma+'\t'+pfam_block
+			if pfam_block != '-': # if no PFAM match was found, yield bar
+				index_pf = pfam_block.find('PF')
+				# still contains additional info; dots must be trimmed-out
+				pfam_block = pfam_block[index_pf:]  
+				pfam_block = pfam_block[0: pfam_block.find('.')]
+				results.append({glyma: pfam_block})
 		
+		# when all analysis is complete, return array with mappings		
+		for i in results:
+			print i
+		# TODO - add behaviors to fetch PFAM annotations given PFAM accession
 	else:
 		print 'Please provide a valid input file'
 

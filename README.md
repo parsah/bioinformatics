@@ -8,6 +8,8 @@
 
 * GFF3 <-> fasta <-> PFAM; parse PFAM annotations onto GFF3 attributes given fasta
 
+* Simple script to parse PFAM BLAST hits and fetch its respective PFAM annotation
+
 * RNA-Seq tag-multiplex counting
 
 * Uniprot / BLAST analysis and XML parsing
