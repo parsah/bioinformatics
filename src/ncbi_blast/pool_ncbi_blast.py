@@ -17,10 +17,11 @@ PROG = 'blastp'
 E_VAL = 1e-5
 
 # NUMBER OF PROCESSES
-NUM_PROCESSES = multiprocessing.cpu_count()
+NUM_PROCESSES = 8
 
 # PROG-SPECIFIC VARIABLES
-AMBIGIOUS_KEYWORDS = ['hypothetical', 'putative', 'unknown', 'unnamed', 'predicted']
+AMBIGIOUS_KEYWORDS = ['hypothetical', 'putative', 'unknown', 'unnamed', 'predicted',
+					'Predicted', 'uncharacterized', 'Uncharacterized']
 ALL_HITS = []
 
 NUM_COMPLETED = 0
@@ -114,29 +115,38 @@ def init_blast():
 	ALL_HITS = pool.map(blast_seq, records)
 
 def process_hits():
-	global ALL_HITS, OUT_XML_DIR
-	out_handle = open(OUT_XML_DIR, 'w')
-	for each_result in ALL_HITS:
-		header, xml_string = each_result # last index is the xml string
-		
-		xml_filename = 'blast_output.xml'
-		xml_handle = open(xml_filename, 'w')
-		xml_handle.write(xml_string)
-		xml_handle.flush()
-		xml_handle.close()
-		
-		records = NCBIXML.parse(open(xml_filename))
-		out_string = header+'\t'+parse_results(records)
-		out_handle.write(out_string+'\n')
-		out_handle.flush()
+	global OUT_XML_DIR
+	
+	# create an output handle
+	out_handle = open(OUT_XML_DIR+'/blast_parsed_results.txt', 'w')
+	
+	# get all the BLAST xml files
+	xml_files = sorted([i for i in os.listdir(OUT_XML_DIR) if '.xml' in i])
+	# ... and parse each one
+	each_file = None
+	try:
+		for each_file in xml_files:	
+			xml_filename = OUT_XML_DIR+'/' + each_file
+			
+			# get the header of the sequence
+			file_basename = os.path.basename(xml_filename)
+			header = os.path.splitext(file_basename)[0]
+			
+			# parse each XML file
+			records = NCBIXML.parse(open(xml_filename))
+			out_string = header +'\t' + parse_results(records)
+			out_handle.write(out_string+'\n')
+			out_handle.flush()
+			print out_string
+	except ValueError:
+		print each_file, 'has is an invalid XML file'	
 	out_handle.close()
-
-		
+	
 if __name__ == '__main__':
 	try:
-		os.mkdir(OUT_XML_DIR) # create the output folder
-		init_blast() # use multiple processes to run blast
-#		process_hits() # results are then fetched and saved to the txt file
+		#os.mkdir(OUT_XML_DIR) # create the output folder
+		#init_blast() # use multiple processes to run blast
+		process_hits() # results are then fetched and saved to the txt file
 		print 'analysis complete', time.asctime()
 		
 	except KeyboardInterrupt:

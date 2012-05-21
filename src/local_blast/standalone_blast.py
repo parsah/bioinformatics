@@ -5,7 +5,7 @@ from Bio import SeqIO
 
 # words to filter from annotations 
 AMBIGIOUS_KEYWORDS = ['hypothetical', 'putative', 'unknown', 'unnamed', 'predicted', 
-					'uncharacterized']
+					'uncharacterized', 'Predicted']
 
 # points to ncbi bin folder
 BLAST_EVALUE = ''
@@ -83,7 +83,7 @@ def run_blast(fasta_id, fasta_seq):
 	xml_file = DB_FOLDER+'/'+fasta_id+'.xml'
 	cmd = BLAST_PROG+" -db " + DB_FOLDER+'/'+DB_NAME +\
 		' -query ' + fasta_file + ' -evalue ' +str(BLAST_EVALUE) +\
-		' -outfmt 5 ' + ' -out ' + xml_file + ' -num_alignments 3'
+		' -outfmt 5 ' + ' -out ' + xml_file + ' -num_alignments 10'
 	os.system(cmd) # execute the local-blast command
 	return fasta_id, fasta_file, xml_file
 	
