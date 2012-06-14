@@ -20,9 +20,9 @@ def __check_sequences(list_seq):
 			return False
 
 # Create mappings of what char is found at what sequence-index
-def generate_regex(sequences):
+def generate_regex(args):
 	dict_positions = collections.defaultdict(set)
-	for each_seq in sequences:
+	for each_seq in args['sequences']:
 		for index, each_char in enumerate(each_seq):
 			dict_positions[index].add(each_char)
 			
@@ -34,18 +34,21 @@ def generate_regex(sequences):
 			index_combinations = '[' + index_combinations + ']'
 		regex_str += index_combinations # concat index's combinations into one
 	
-	print regex_str	
+	print args['name'],'\t',regex_str
 
 def main():
 	desc = 'Regular Expression generator given equally-sized strings'
 	parser = argparse.ArgumentParser(description=desc)
 	parser.add_argument('sequences', type=str, nargs='+',
 					help='List of equally-sized raw DNA sequences')
+	parser.add_argument('-name', type=str, required=True,
+					help='Name of TF gene which maps to the TFBS sequence')
+	
 	args = vars(parser.parse_args())
 	
 	# test if > 1 sequence is provided and all sequences are equal in length
 	if __check_sequences(args['sequences']):
-		generate_regex(args['sequences'])
-
+		generate_regex(args)
+		
 if __name__ == '__main__':
 	main()
