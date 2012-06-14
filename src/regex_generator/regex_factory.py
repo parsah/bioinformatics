@@ -38,8 +38,7 @@ def generate_regex(sequences):
 
 def main():
 	desc = 'Regular Expression generator given equally-sized strings'
-	usage='%(prog)s sequences [seq1, seq2, ...]'
-	parser = argparse.ArgumentParser(usage, description=desc)
+	parser = argparse.ArgumentParser(description=desc)
 	parser.add_argument('sequences', type=str, nargs='+',
 					help='List of equally-sized raw DNA sequences')
 	args = vars(parser.parse_args())
