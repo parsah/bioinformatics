@@ -2,7 +2,7 @@
 
 ### by Parsa Hosseini [Parsa.Hosseini@ars.usda.gov]
 
-(Last update: May. 2012)
+(Last update: June. 2012)
 
 ### A collection of bioinformatics (RNA-Seq, seq. analysis, annotation) scripts for tasks such as:
 
@@ -18,4 +18,5 @@
 
 * ORF and GO->OBO analysis
 
-* Reg-ex conversion script for cis-element plant DB, PLACE.
+* Reg-ex conversion script for cis-element plant DB, PLACE. New script for converting 
+XML file -> regular expression. (see regex_generator folder for details)
