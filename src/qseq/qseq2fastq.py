@@ -3,7 +3,6 @@ import argparse
 
 # Drives the parsing of the qseq file and prints stdout
 def parse(input_file):
-	print input_file
 	for line in open(input_file):
 		line = line.strip().split()
 		header = '@'+line[0]+':'+line[2]+':'+line[3]+':'+line[4]+':'+line[5]+'#'+line[6]
