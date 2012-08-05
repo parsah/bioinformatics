@@ -7,7 +7,6 @@ ncbi_blast.py
 from Bio import SeqIO
 from Bio.Blast import NCBIWWW
 from Bio.Blast import NCBIXML
-import multiprocessing
 from multiprocessing import Pool
 import time, os
 

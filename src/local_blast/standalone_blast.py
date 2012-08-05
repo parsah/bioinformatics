@@ -1,7 +1,7 @@
 
 import argparse, multiprocessing, time, os
 from Bio.Blast import NCBIXML
-from Bio import SeqIO
+import string
 
 # words to filter from annotations 
 AMBIGIOUS_KEYWORDS = ['hypothetical', 'putative', 'unknown', 'unnamed', 'predicted', 
@@ -37,8 +37,26 @@ def create_fasta_file(fasta_id, fasta_seq):
 	out_handle.close()
 	return filename
 
+def onlyascii(char):
+	if char not in string.printable: 
+		return 'X'
+	else:
+		return char
+
+def sanitize_xml(xml_fname): 
+	curr_str = open(xml_fname, 'r').read()
+	new_str = ''
+	for achar in curr_str:
+		new_str += onlyascii(achar)
+	
+	handle = open(xml_fname,'w')
+	handle.write(new_str)
+	handle.flush()
+	handle.close()
+	
 def process_blast_xml(fasta_id, xml_filename):
 	global NUM_WITH_HIT, NUM_WITHOUT_HIT
+	sanitize_xml(xml_filename)
 	records = NCBIXML.parse(open(xml_filename))
 	all_hits = [] # represents all the hits per fasta id
 	for blast_records in records:
