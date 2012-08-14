@@ -1,4 +1,6 @@
 
+# Useful script to convert an illumina QSEQ file into fastq
+
 import argparse
 
 # Drives the parsing of the qseq file and prints stdout
