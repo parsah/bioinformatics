@@ -5,7 +5,6 @@ respective GO annotations with blast txt output which has GO IDs.
 As a result, you get GO annotations given a set of GO IDs.
 """
 
-
 import argparse, re
 from lxml import etree
 
