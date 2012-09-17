@@ -32,12 +32,15 @@ def get_ecs(uniprot_ids):
 	for counter, uniprot_id in enumerate(uniprot_ids):
 		try:
 			out_fname = uniprot_to_xml(uniprot_id) # get filename XML is stored in
+			# get the name of the EC also
+			tree = ElementTree.parse(out_fname)
+			ec_name = [n.text for n in tree.getiterator(schema+'fullName')][0]
+			ec_refs = tree.getiterator(schema+'dbReference')
 			# only get 'dbReference' nodes: nodes which have annotations
-			tree = ElementTree.parse(out_fname).getiterator(schema+'dbReference')
 			# get the number of EC maps corresponding to this GO ID
 			num_ecs = '|'.join([node.attrib['id'] 
-					for node in tree if 'EC' in node.attrib['type']])
-			print str(counter) +'\t' + uniprot_id+'\t'+num_ecs 
+					for node in ec_refs if 'EC' in node.attrib['type']])
+			print str(counter) +'\t' + uniprot_id+'\t'+num_ecs+'\t'+ec_name
 		except urllib2.HTTPError:
 			print str(counter) +'\t' + uniprot_id+'\t-' # null-output
 			

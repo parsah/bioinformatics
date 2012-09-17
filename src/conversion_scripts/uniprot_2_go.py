@@ -69,7 +69,7 @@ if __name__ == '__main__':
 	uniprot_accns = load_in_file('uniprot_accns.txt')
 	out_writer = open('go_ontologies_from_uniprot.txt', 'w')
 	
-	pool = multiprocessing.Pool(processes=16)
+	pool = multiprocessing.Pool(processes=1)
 	for counter, accn in enumerate(uniprot_accns):
 		pool.apply_async(run_analysis, (counter, accn,), callback=cb)
 		
