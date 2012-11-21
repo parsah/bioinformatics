@@ -1,27 +1,28 @@
-
 """ 
 Given a set of uniprot accessions, fetch GO annotations for each accession.
 This logic is implemented using 'multiprocessing' and 'Elementree' 
 """
 
-import urllib2
+import argparse, urllib2
 from xml.etree import ElementTree 
 
 schema = '{http://uniprot.org/uniprot}'
 no_annot = '---' # represents uniprot accessions lacking a specific GO function 
 
-# Parses user-provided GO file	
+# Parses user-provided uniprot file	
 def load_in_file(filename):
 	handle = open(filename)
 	list_accns = []
 	for accn in handle:
-		accn = accn.strip()
-		if accn != no_annot and len(accn) > 0:
+		accn = accn.strip().split('\t')
+		if len(accn) == 1: # if no metadata is provided, provide empty string
+			accn.append('')
+		if len(accn) > 0:
 			list_accns.append(accn)
 	return list_accns
 
 # Cleanses output so that GO component, function and process are aligned
-def to_out(accn, component, function, process):
+def to_out(uniprot, metadata, component, function, process):
 	max_go = max([len(component), len(function), len(process)])
 	comp = ['-'] * max_go
 	func = ['-'] * max_go
@@ -31,11 +32,12 @@ def to_out(accn, component, function, process):
 	proc[0:len(process)] = process
 	
 	for i in range(max_go):
-		print accn+'\t'+comp[i]+'\t'+ func[i]+'\t'+ proc[i]
+		print uniprot+'\t'+comp[i]+'\t'+ func[i]+'\t'+ proc[i]+'\t'+metadata
 
-def run_analysis(counter, accn):
+def run_analysis(i, accn):
 	try:
-		xml_fname = 'http://www.uniprot.org/uniprot/' + accn + '.xml'
+		uniprot, metadata = accn
+		xml_fname = 'http://www.uniprot.org/uniprot/' + uniprot + '.xml'
 		data = urllib2.urlopen(xml_fname).read()
 		tree = ElementTree.XML(data)
 		func, proc, comp = set(), set(), set()
@@ -64,12 +66,16 @@ def run_analysis(counter, accn):
 						comp.add(value[2:]) # skip 'C:'
 		# there may be multiple GO components, functions or processes. In
 		# such a case, print each on a different line
-		to_out(accn, list(comp), list(func), list(proc))
-		
+		to_out(uniprot, metadata, list(comp), list(func), list(proc))
 	except ElementTree.ParseError:
 		print accn+ '\t*** NOT FOUND ***'
+
 if __name__ == '__main__':
-	uniprot_accns = load_in_file('uniprot_accns.txt')
-	for counter, accn in enumerate(uniprot_accns):
-		run_analysis(counter, accn)
-	
+	p = argparse.ArgumentParser(description='Uniprot to GO-annotations script')
+	p.add_argument('-in', metavar='FILE', required=True, 
+				help='File of uniprot accessions; line separated')
+	args = vars(p.parse_args())
+	uniprot_accns = load_in_file(filename=args['in'])
+	for i, accn in enumerate(uniprot_accns):
+		run_analysis(i, accn)
+			
