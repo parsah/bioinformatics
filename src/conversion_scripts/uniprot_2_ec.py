@@ -1,9 +1,10 @@
 
-import argparse, urllib2
+import argparse, os, urllib2
 from xml.etree import ElementTree # library to parse xml file
 
 base_url = 'http://www.uniprot.org/uniprot/' # base url for accessing uniprot
 schema = '{http://uniprot.org/uniprot}'
+temp_results = 'tempfile.xml' # xml containing information for the accession
 invalid_ids = set(['','-']) # set of invalid uniprot accessions 
 
 # parse user-provided input file
@@ -19,13 +20,12 @@ def _parse_uniprot_file(fname):
 
 # Helper-function which downloads the XML file for a respective uniprot ID
 def uniprot_to_xml(uniprot_id):
-	output_fname = 'tempfile.xml'
 	uniprot_url = base_url + uniprot_id + '.xml' # obide-by uniprot web-service
 	url_contents = urllib2.urlopen(url=uniprot_url).read()
-	handle = open(output_fname, 'w')
+	handle = open(temp_results, 'w')
 	handle.write(url_contents+'\n') # save downloaded XML locally
 	handle.flush()
-	return output_fname # the output XML filename
+	return temp_results # the output XML filename
 
 # iteratively retrieve EC accessions for each uniprot ID (if existent)
 def get_ecs(uniprot_ids):
@@ -43,8 +43,7 @@ def get_ecs(uniprot_ids):
 			print str(counter) +'\t' + uniprot_id+'\t'+num_ecs+'\t'+ec_name
 		except urllib2.HTTPError:
 			print str(counter) +'\t' + uniprot_id+'\t-' # null-output
-			
-	print 'done'
+	os.remove(temp_results) # when all is complete, delete temp file
 
 if __name__ == '__main__':
 	# Create a parser so file of uniprot IDs can have their EC IDs retrieved
