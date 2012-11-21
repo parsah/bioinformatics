@@ -34,6 +34,12 @@ class OutputResult():
 	# Set EC accessions mapping to the uniprot accession
 	def set_ec_accns(self, ecs):
 		self.ec = ecs
+	
+	# Print headers so columns can be easily identified
+	@staticmethod
+	def print_headers():
+		h = ["Uniprot","EC","Description","Component","Function","Process","Metadata"]
+		print '\t'.join(h)
 		
 	# Cleanses output so that GO component, function and process are aligned
 	def to_out(self):
@@ -109,6 +115,7 @@ if __name__ == '__main__':
 					help='File of uniprot accessions; line separated')
 		args = vars(p.parse_args())
 		accns = load_input(filename=args['in'])
+		OutputResult.print_headers() # first line of output
 		for accn in accns: # get all GOs per uniprot accession
 			run_analysis(accn)
 	except KeyboardInterrupt:
