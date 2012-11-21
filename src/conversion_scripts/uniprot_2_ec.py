@@ -11,7 +11,10 @@ invalid_ids = set(['','-']) # set of invalid uniprot accessions
 def _parse_uniprot_file(fname):
 	handle, accns = open(fname, 'r'), [] # input filename and list of input IDs
 	for line in handle:
-		line = line.strip()
+		# column 1 => uniprot accession, column 2 => metadata, eg. Phytozome ID
+		line = line.strip().split('\t')
+		if len(line) == 1: # if uniprot accessions are provided, metadata is null
+			line.append('')
 		if len(line) == 0: # if line with no accession is encountered, break
 			break
 		else: # ... otherwise, continue
@@ -29,9 +32,10 @@ def uniprot_to_xml(uniprot_id):
 
 # iteratively retrieve EC accessions for each uniprot ID (if existent)
 def get_ecs(uniprot_ids):
-	for counter, uniprot_id in enumerate(uniprot_ids):
+	for i, entry in enumerate(uniprot_ids):
 		try:
-			out_fname = uniprot_to_xml(uniprot_id) # get filename XML is stored in
+			uniprot, metadata = entry
+			out_fname = uniprot_to_xml(uniprot) # get filename XML is stored in
 			# get the name of the EC also
 			tree = ElementTree.parse(out_fname)
 			ec_name = [n.text for n in tree.getiterator(schema+'fullName')][0]
@@ -40,9 +44,9 @@ def get_ecs(uniprot_ids):
 			# get the number of EC maps corresponding to this GO ID
 			num_ecs = '|'.join([node.attrib['id'] 
 					for node in ec_refs if 'EC' in node.attrib['type']])
-			print str(counter) +'\t' + uniprot_id+'\t'+num_ecs+'\t'+ec_name
+			print str(i) +'\t'+ uniprot+'\t'+num_ecs+'\t'+ ec_name + '\t' + metadata
 		except urllib2.HTTPError:
-			print str(counter) +'\t' + uniprot_id+'\t-' # null-output
+			print str(i) +'\t' + uniprot+'\t-' # null-output
 	os.remove(temp_results) # when all is complete, delete temp file
 
 if __name__ == '__main__':
@@ -56,5 +60,3 @@ if __name__ == '__main__':
 		get_ecs(uniprot_ids) # run the script
 	except KeyboardInterrupt:
 		print 'Keyboard-interrupt [Analysis cancelled]'
-	
-	
