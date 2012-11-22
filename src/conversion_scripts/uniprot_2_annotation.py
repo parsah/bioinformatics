@@ -44,9 +44,9 @@ class OutputResult():
 	# Cleanses output so that GO component, function and process are aligned
 	def to_out(self):
 		max_go = max([len(self.go_comp), len(self.go_func), len(self.go_proc)])
-		comp = ['-'] * max_go
-		func = ['-'] * max_go
-		proc = ['-'] * max_go
+		comp = ['---'] * max_go
+		func = ['---'] * max_go
+		proc = ['---'] * max_go
 		comp[0:len(self.go_comp)] = self.go_comp
 		func[0:len(self.go_func)] = self.go_func
 		proc[0:len(self.go_proc)] = self.go_proc
@@ -80,7 +80,10 @@ def run_analysis(accn):
 		ecs = '|'.join([node.attrib['id'] 
 					for node in ec_tree if 'EC' in node.attrib['type']])
 		outresult = OutputResult(accn=uniprot, desc=ec_desc, metadata=metadata)
-		outresult.set_ec_accns(ecs) # sets EC accessions
+		if len(ecs) == 0:
+			outresult.set_ec_accns('---') # sets EC accessions
+		else:
+			outresult.set_ec_accns(ecs) # sets EC accessions
 		for node in tree.getiterator():
 			str_curr_tag = node.tag.replace('{http://uniprot.org/uniprot}', '')
 			# Each node = {'type': 'GO', 'id': 'GO:0005351', 'key': '17'}
@@ -106,7 +109,7 @@ def run_analysis(accn):
 		outresult.to_out()
 		
 	except urllib2.HTTPError: # if an invalid URL is provided, print blanks
-		print uniprot + '\t' + metadata +'\t-\t-\t-\t-\t-'
+		print uniprot + '\t---\t---\t---\t---\t---\t' + metadata
 
 if __name__ == '__main__':
 	try:
