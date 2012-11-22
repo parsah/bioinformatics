@@ -106,7 +106,7 @@ def run_analysis(accn):
 		outresult.to_out()
 		
 	except urllib2.HTTPError: # if an invalid URL is provided, print blanks
-		print uniprot + '\t' + metadata
+		print uniprot + '\t' + metadata +'\t-\t-\t-\t-\t-'
 
 if __name__ == '__main__':
 	try:
