@@ -11,25 +11,25 @@ schema = '{http://uniprot.org/uniprot}'
 # Wraps uniprot annotation results
 class OutputResult():
 	def __init__(self, accn, desc, metadata):
-		self.uniprot_accn = accn # is set at runtime
+		self.uniprot = accn # is set at runtime
 		self.metadata = metadata # references input metadata
-		self.uniprot_desc = desc # uniprot description
+		self.desc = desc # uniprot description
 		self.ec = None # references EC accession(s)
-		self.go_proc = set() # an accession may have multiple GO entries
-		self.go_comp = set() # references GO components
-		self.go_func = set() # references GO functions
+		self.go_proc = [] # an accession may have multiple GO entries
+		self.go_comp = [] # references GO components
+		self.go_func = [] # references GO functions
 		
 	# Add GO component
 	def add_component(self, item):
-		self.go_comp.add(item)
+		self.go_comp.append(item)
 	
 	# Add GO function
 	def add_function(self, item):
-		self.go_func.add(item)
+		self.go_func.append(item)
 	
 	# Add GO process
 	def add_process(self, item):
-		self.go_proc.add(item)
+		self.go_proc.append(item)
 	
 	# Set EC accessions mapping to the uniprot accession
 	def set_ec_accns(self, ecs):
@@ -40,22 +40,25 @@ class OutputResult():
 	def print_headers():
 		h = ["Uniprot","EC","Description","Component","Function","Process","Metadata"]
 		print '\t'.join(h)
-		
-	# Cleanses output so that GO component, function and process are aligned
-	def to_out(self):
-		max_go = max([len(self.go_comp), len(self.go_func), len(self.go_proc)])
-		comp = ['---'] * max_go
-		func = ['---'] * max_go
-		proc = ['---'] * max_go
-		comp[0:len(self.go_comp)] = self.go_comp
-		func[0:len(self.go_func)] = self.go_func
-		proc[0:len(self.go_proc)] = self.go_proc
-		
-		for i in range(max_go): # print out all the Go annotations
-			print self.uniprot_accn+'\t'+self.ec+'\t'+\
-				self.uniprot_desc+'\t'+comp[i]+'\t'+ func[i]+'\t'+\
-				proc[i]+'\t'+self.metadata
-
+	
+	# Function to convert all GO ontologies to printable strings
+	def stringify_annotations(self):
+		# if no GO ontology has an annotation, give it a default blank
+		if len(self.go_comp) == 0:
+			self.go_comp.append('---')
+		if len(self.go_func) == 0:
+			self.go_func.append('---')
+		if len(self.go_proc) == 0:
+			self.go_proc.append('---')
+			
+		return ' --- '.join(self.go_comp).strip() + ' \t '+\
+			 ' --- '.join(self.go_func).strip()+' \t ' +' --- '.join(self.go_proc).strip()
+	
+	# Helper-function to output findings to standard-out	
+	def output(self):		
+		print self.uniprot+'\t'+self.ec+'\t'+ self.desc+'\t'+\
+			self.stringify_annotations() + '\t'+self.metadata
+			
 # Parses user-provided uniprot file	
 def load_input(filename):
 	handle = open(filename)
@@ -79,11 +82,11 @@ def run_analysis(accn):
 		# get the number of EC maps corresponding to this GO ID
 		ecs = '|'.join([node.attrib['id'] 
 					for node in ec_tree if 'EC' in node.attrib['type']])
-		outresult = OutputResult(accn=uniprot, desc=ec_desc, metadata=metadata)
+		out = OutputResult(accn=uniprot, desc=ec_desc, metadata=metadata)
 		if len(ecs) == 0:
-			outresult.set_ec_accns('---') # sets EC accessions
+			out.set_ec_accns('---') # sets EC accessions
 		else:
-			outresult.set_ec_accns(ecs) # sets EC accessions
+			out.set_ec_accns(ecs) # sets EC accessions
 		for node in tree.getiterator():
 			str_curr_tag = node.tag.replace('{http://uniprot.org/uniprot}', '')
 			# Each node = {'type': 'GO', 'id': 'GO:0005351', 'key': '17'}
@@ -99,14 +102,13 @@ def run_analysis(accn):
 				for child in children:
 					value = child.attrib['value']
 					if 'F:' in value:
-						outresult.add_function(value[2:]) # skip 'F:'
+						out.add_function(value[2:]) # skip 'F:'
 					if 'P:' in value:
-						outresult.add_process(value[2:]) # skip 'P:'
+						out.add_process(value[2:]) # skip 'P:'
 					if 'C:' in value:
-						outresult.add_component(value[2:]) # skip 'C:'
-		# there may be multiple GO components, functions or processes. In
-		# such a case, print each on a different line
-		outresult.to_out()
+						out.add_component(value[2:]) # skip 'C:'
+		# Output results to standard-out
+		out.output()
 		
 	except urllib2.HTTPError: # if an invalid URL is provided, print blanks
 		print uniprot + '\t---\t---\t---\t---\t---\t' + metadata
