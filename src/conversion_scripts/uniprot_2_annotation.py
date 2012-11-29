@@ -3,7 +3,7 @@ A script which fetches functional annotations for a uniprot ID.
 Annotations include GO ontologies, EC accession and uniprot description.
 """
 
-import argparse, urllib2
+import argparse, multiprocessing, urllib2
 from xml.etree import ElementTree 
 
 schema = '{http://uniprot.org/uniprot}'
@@ -51,12 +51,12 @@ class OutputResult():
 		if len(self.go_proc) == 0:
 			self.go_proc.append('---')
 			
-		return ' --- '.join(self.go_comp).strip() + ' \t '+\
-			 ' --- '.join(self.go_func).strip()+' \t ' +' --- '.join(self.go_proc).strip()
+		return ' --- '.join(self.go_comp).strip() + '\t'+\
+			 ' --- '.join(self.go_func).strip()+'\t' +' --- '.join(self.go_proc).strip()
 	
-	# Helper-function to output findings to standard-out	
-	def output(self):		
-		print self.uniprot+'\t'+self.ec+'\t'+ self.desc+'\t'+\
+	# Helper-function to get_output findings to standard-out	
+	def get_output(self):		
+		return self.uniprot+'\t'+self.ec+'\t'+ self.desc+'\t'+\
 			self.stringify_annotations() + '\t'+self.metadata
 			
 # Parses user-provided uniprot file	
@@ -108,20 +108,31 @@ def run_analysis(accn):
 					if 'C:' in value:
 						out.add_component(value[2:]) # skip 'C:'
 		# Output results to standard-out
-		out.output()
+		return out.get_output()
 		
 	except urllib2.HTTPError: # if an invalid URL is provided, print blanks
-		print uniprot + '\t---\t---\t---\t---\t---\t' + metadata
+		return uniprot + '\t---\t---\t---\t---\t---\t' + metadata
+
+# Callback function given a 
+def cb(retval):
+	print(retval)
 
 if __name__ == '__main__':
 	try:
 		p = argparse.ArgumentParser(description='Uniprot to GO-annotations script')
-		p.add_argument('-in', metavar='FILE', required=True, 
+		p.add_argument('-in', metavar='FILE', required=True, # input file
 					help='File of uniprot accessions; line separated')
+		p.add_argument('-n', metavar='INT', default=2, type=int, # workers
+					help='Worker processes [2]')
 		args = vars(p.parse_args())
-		accns = load_input(filename=args['in'])
-		OutputResult.print_headers() # first line of output
-		for accn in accns: # get all GOs per uniprot accession
-			run_analysis(accn)
+		accns = load_input(filename=args['in']) # parse input
+		OutputResult.print_headers() # first line of get_output
+		pool = multiprocessing.Pool(processes=args['n'])
+		for accn in accns: # run analysis and ultimately save to file
+			pool.apply_async(func=run_analysis, args=(accn,), callback=cb)
+		pool.close() # when complete, close pool
+		pool.join()
+		pool.terminate()
+		
 	except KeyboardInterrupt:
 		pass	
