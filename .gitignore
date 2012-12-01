@@ -1,7 +1,8 @@
 .classpath
 .project
 .pydevproject
-.fasta
-.fa
-.txt
-.xml
+*.fasta
+*.fa
+*.txt
+*.xml
+*.pyc
