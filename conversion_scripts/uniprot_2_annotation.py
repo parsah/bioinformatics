@@ -8,12 +8,13 @@ import argparse, urllib2
 from xml.etree import ElementTree 
 
 modes = ['ec', 'go', 'desc', 'pfam'] # modes of analysis
-	
+no_hit = '---' # displayed when no annotation is possible
+div = ' '+str(no_hit)+' ' # divides multiple accessions
+
 # This class performs the bulk of all annotation efforts
 class AnnotationFactory():
 	def __init__(self, fname, mode):
 		self.schema = '{http://uniprot.org/uniprot}' # for xml parsing
-		self.no_hit = '---' # displayed when no annotation is possible
 		self.fname = fname # references input uniprot accessions
 		self.mode = mode # whether to annotate ECs, GO, or others
 		self.uniprot_accns = [] # contains uniprot accessions once parsed
@@ -43,12 +44,12 @@ class AnnotationFactory():
 			try:
 				u = UniprotXML(accn)
 				pf_tree = u.tree.getiterator(self.schema+'dbReference')
-				pfam = ' | '.join([node.attrib['id'] for node in pf_tree 
+				pfam = div.join([node.attrib['id'] for node in pf_tree 
 							if 'Pfam' in node.attrib['type']])
-				pfam = self.no_hit if pfam == '' else pfam
+				pfam = no_hit if pfam == '' else pfam
 				print accn + '\t' + pfam
 			except urllib2.HTTPError:
-				print accn + '\t' + self.no_hit
+				print accn + '\t' + no_hit
 		
 	# get all ECs given the list of uniprot accessions
 	def get_ecs(self):
@@ -57,12 +58,12 @@ class AnnotationFactory():
 			try:
 				u = UniprotXML(accn)
 				ec_tree = u.tree.getiterator(self.schema+'dbReference')
-				ec = ' | '.join([node.attrib['id']
+				ec = div.join([node.attrib['id']
 							for node in ec_tree if 'EC' in node.attrib['type']])
-				ec = self.no_hit if ec == '' else ec
+				ec = no_hit if ec == '' else ec
 				print accn + '\t' + ec
 			except urllib2.HTTPError:
-				print accn + '\t' + self.no_hit
+				print accn + '\t' + no_hit
 	
 	# get all GO ontologies given the list of uniprot accessions
 	def get_gos(self):
@@ -85,18 +86,17 @@ class AnnotationFactory():
 				c, f, p = self._string_go(c=comp, f=func, p=proc)
 				print acc + '\t' + c + '\t' + f + '\t' + p
 			except urllib2.HTTPError:
-				print acc + '\t' + self.no_hit + '\t' + self.no_hit + '\t' + self.no_hit
+				print acc + '\t' + no_hit + '\t' + no_hit + '\t' + no_hit
 	
 	# Helper-function to convert GO ontologies to string objects
 	def _string_go(self, c, f, p):
 		# if no GO ontology has an annotation, give it a default blank
-		div = ' '+str(self.no_hit)+' ' # separates like-GOs from one another
 		if len(c) == 0:
-			c.append(self.no_hit)
+			c.append(no_hit)
 		if len(f) == 0:
-			f.append(self.no_hit)
+			f.append(no_hit)
 		if len(p) == 0:
-			p.append(self.no_hit)
+			p.append(no_hit)
 		return div.join(c).strip(), div.join(f).strip(), div.join(p).strip()
 		
 	# get the uniprot description for the accession 
@@ -108,7 +108,7 @@ class AnnotationFactory():
 				desc = [n.text for n in u.tree.getiterator(self.schema+'fullName')]
 				print accn + '\t' + desc[0] # get the description
 			except urllib2.HTTPError:
-				print accn + '\t' + self.no_hit
+				print accn + '\t' + no_hit
 			
 # A UniprotXML is an encapsulation of the XML file given its web-service
 class UniprotXML():
