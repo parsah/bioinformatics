@@ -7,7 +7,7 @@ useful in cases when you seek to only update annotations of a particular type.
 import argparse, urllib2
 from xml.etree import ElementTree 
 
-modes = ['ec', 'go', 'desc'] # modes of analysis
+modes = ['ec', 'go', 'desc', 'pfam'] # modes of analysis
 	
 # This class performs the bulk of all annotation efforts
 class AnnotationFactory():
@@ -32,9 +32,24 @@ class AnnotationFactory():
 	# Query accessions against uniprot and get accessions based on 'mode'
 	def query(self):
 		# modes are [ec, go, desc], therefore map to their respective function
-		route = dict(zip(modes, [self.get_ecs, self.get_gos, self.get_desc]))
+		route = dict(zip(modes, 
+				[self.get_ecs, self.get_gos, self.get_desc, self.get_pfam]))
 		route[self.mode]() # execute the desired function
 	
+	# Get PFAM IDs given the uniprot accession-list
+	def get_pfam(self):
+		print 'UNIPROT\tPFAM' # print header
+		for accn in self.uniprot_accns:
+			try:
+				u = UniprotXML(accn)
+				pf_tree = u.tree.getiterator(self.schema+'dbReference')
+				pfam = ' | '.join([node.attrib['id'] for node in pf_tree 
+							if 'Pfam' in node.attrib['type']])
+				pfam = self.no_hit if pfam == '' else pfam
+				print accn + '\t' + pfam
+			except urllib2.HTTPError:
+				print accn + '\t' + self.no_hit
+		
 	# get all ECs given the list of uniprot accessions
 	def get_ecs(self):
 		print 'UNIPROT\tEC' # print header
@@ -42,7 +57,7 @@ class AnnotationFactory():
 			try:
 				u = UniprotXML(accn)
 				ec_tree = u.tree.getiterator(self.schema+'dbReference')
-				ec = '|'.join([node.attrib['id']
+				ec = ' | '.join([node.attrib['id']
 							for node in ec_tree if 'EC' in node.attrib['type']])
 				ec = self.no_hit if ec == '' else ec
 				print accn + '\t' + ec
@@ -110,12 +125,15 @@ class UniprotXML():
 
 if __name__ == '__main__':
 	try:
-		p = argparse.ArgumentParser(description='Uniprot to GO-annotations script')
+		desc = """Script to retrieve uniprot annotations. Several modes are 
+			used to facilitate retrieval of annotations given uniprot 
+			accessions. Accepted modes include: [ec, go, desc, pfam].""" 
+		p = argparse.ArgumentParser(description=desc)
 		p.add_argument('-in', metavar='FILE', required=True, # input file
 					help='File of uniprot accessions; line separated')
-		p.add_argument('-mode', metavar='LIST', # annotation type
+		p.add_argument('-mode', metavar='MODE', # annotation type
 					choices=modes, required=True,
-					help='Annotation retrieval; choices [na]')
+					help='Annotation retrieval mode')
 		args = vars(p.parse_args())
 		
 		factory = AnnotationFactory(fname=args['in'], mode=args['mode'])
