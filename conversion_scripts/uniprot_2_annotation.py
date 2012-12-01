@@ -48,7 +48,7 @@ class AnnotationFactory():
 							if 'Pfam' in node.attrib['type']])
 				pfam = no_hit if pfam == '' else pfam
 				print accn + '\t' + pfam
-			except urllib2.HTTPError:
+			except Exception:
 				print accn + '\t' + no_hit
 		
 	# get all ECs given the list of uniprot accessions
@@ -62,7 +62,7 @@ class AnnotationFactory():
 							for node in ec_tree if 'EC' in node.attrib['type']])
 				ec = no_hit if ec == '' else ec
 				print accn + '\t' + ec
-			except urllib2.HTTPError:
+			except Exception:
 				print accn + '\t' + no_hit
 	
 	# get all GO ontologies given the list of uniprot accessions
@@ -85,7 +85,7 @@ class AnnotationFactory():
 								comp.append(value[2:]) # add 'C:'
 				c, f, p = self._string_go(c=comp, f=func, p=proc)
 				print acc + '\t' + c + '\t' + f + '\t' + p
-			except urllib2.HTTPError:
+			except Exception:
 				print acc + '\t' + no_hit + '\t' + no_hit + '\t' + no_hit
 	
 	# Helper-function to convert GO ontologies to string objects
@@ -107,7 +107,7 @@ class AnnotationFactory():
 				u = UniprotXML(accn) # uniprot xml encapsulation
 				desc = [n.text for n in u.tree.getiterator(self.schema+'fullName')]
 				print accn + '\t' + desc[0] # get the description
-			except urllib2.HTTPError:
+			except Exception:
 				print accn + '\t' + no_hit
 			
 # A UniprotXML is an encapsulation of the XML file given its web-service
