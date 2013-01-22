@@ -1,7 +1,38 @@
 # A trivial MAF+ alignment parser; a file-format produced using the 
 # LASTZ alignment tool (Miller lab, PSU).
 
-import argparse, re
+import argparse, csv, re
+
+		
+# Models a user-provided functional annotation
+class GenomeAnnotations():
+	def __init__(self, fname):
+		self.fname = fname # annotation filename; provided CSV file
+		self.annotations = {} # key => transcript ID, value => full annotation
+		self.col_chrom = 0 # columns representing chromosome of annotation 
+		self.col_start = 0 # columns representing start index of annotation
+		self.col_end = 0 # columns representing end index of annotation
+	
+	# Sets arguments pertaining to the annotation such as start and end indices
+	def set_args(self, args):
+		self.col_chrom = args['chrom']
+		self.col_start = args['start']
+		self.col_end = args['end']
+		
+	# Parse the user-provided CSV file; use in-built module for parsing.
+	def parse(self):
+		linenum = 0
+		for l in csv.reader(open(self.fname)):
+			if linenum != 0: # the first line is the GFF3 comment
+				# Represents CSV columns; zero-indexing
+				chrom = l[self.col_chrom]
+				start, end = int(l[self.col_start]), int(l[self.col_end])
+				if chrom not in self.annotations:
+					self.annotations[chrom] = []
+				entry = {'chrom': chrom, 'start': start, 'end': end, 'annot': l}
+				self.annotations[chrom].append(entry)
+			linenum += 1 # increment line number
+		print('Success:',len(self.annotations), 'chromosomes added')
 
 # Represents an abstraction given a MAF+ entry  
 class MAFEntry():
@@ -106,11 +137,36 @@ class MAFParser():
 			self._cleanse_continuity(maf_obj)
 			self._cleanse_cigar(maf_obj)
 			self._cleanse_score(maf_obj)
-	
-if __name__ == '__main__':
-	p = argparse.ArgumentParser()
-	p.add_argument('-i', metavar='FILE', required=True, # provide input file
-				help='MAF+ input file [na]', default=None)
-	args = vars(p.parse_args())
+
+# Run the factory
+def init(args):
 	parser = MAFParser(fname=args['i'])
 	parser.parse()
+	query_annot = GenomeAnnotations(fname=args['annot_query'])
+	query_annot.set_args(args)
+	query_annot.parse()
+
+if __name__ == '__main__':
+	p = argparse.ArgumentParser(add_help=False) # parser object
+	
+	# Groups to encapsulate user-provided arguments
+	p_reqd = p.add_argument_group('Required Arguments')
+	p_opts = p.add_argument_group('Optional Arguments')
+	
+	# Required command-line arguments
+	p_reqd.add_argument('--annot_query', help='Query CSV annotations [na]', 
+					metavar='FILE', required=True)
+	p_reqd.add_argument('-i', metavar='FILE', required=True, # provide input file
+				help='MAF+ input file [na]', default=None)
+	
+	# Optional command-line arguments
+	p_opts.add_argument('-chrom', help='Column representing chromosome IDs [3]', 
+				default=3, type=int, metavar='INT')
+	p_opts.add_argument('-start', help='Column representing start indices [4]', 
+				default=4, type=int, metavar='INT')
+	p_opts.add_argument('-end', help='Column representing end indices [5]', 
+				default=5, type=int, metavar='INT')
+	p_opts.add_argument('-h','--help', action='help',
+					help='Show this help screen and exit')
+	
+	init(vars(p.parse_args())) # run the parser
