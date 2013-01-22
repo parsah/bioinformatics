@@ -24,10 +24,10 @@ def get_desired_seqs(total_seqs, to_keep):
 
 # Parse a list of user-provided fasta headers; entries to keep
 def parse_list(fname):
-	seq_to_keep = set()
+	seq_to_keep = []
 	for line in open(fname):
 		line = line.strip()
-		seq_to_keep.add(line)
+		seq_to_keep.append(line)
 	return seq_to_keep
 	
 # Trivial function to parse a fasta file
