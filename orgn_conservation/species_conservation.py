@@ -13,7 +13,9 @@ class BLASTPResults():
 	
 	# Since the filename is large, only get the basename; much shorter
 	def get_base_name(self):
-		return os.path.basename(self.fname)
+		basename = os.path.basename(self.fname)
+		index_dot = basename.rfind('.')
+		return basename[0: index_dot] # do not return file extension
 		
 	# Determine if the query filename is valid or not
 	def _is_file_valid(self):
@@ -48,6 +50,14 @@ class MutuallyConservedGeneSet():
 		self.hits_query = BLASTPResults(query) # query BLASTP results
 		self.hits_target = BLASTPResults(target) # target BLASTP results
 	
+	# Create handle to save output to
+	def create_output_file(self):
+		out = open(self.hits_query.get_base_name() + '_vs_' +\
+			self.hits_target.get_base_name()+'_conserved.tab', 'w')
+		out.write('Query\tTarget\tReciprocal\n')
+		out.flush()
+		return out
+	
 	# Given parsed query and target hits, merge them to see if the homolog
 	# of one is also the homolog of another. This reciprocal identity is
 	# crucial for deducing magnitude of conservation.
@@ -58,6 +68,7 @@ class MutuallyConservedGeneSet():
 	# The parameter 'whole_isoform' means entire accession is kept, otherwise
 	# the accession is trimmed upto the first dot. Preceeding this is the gene.
 	def join(self, whole_isoform):
+		out = self.create_output_file() # create output file
 		for query_key in self.hits_query.get_results():
 			# Use value to see if it is a key in the target; implies conservation
 			query_val = self.hits_query.get_results()[query_key]
@@ -72,7 +83,13 @@ class MutuallyConservedGeneSet():
 					recip = isoform_to_gene(self.hits_target.get_results()[query_val])
 					query_key = isoform_to_gene(query_key) # gene-query
 					query_val = isoform_to_gene(query_val) # gene-homolog
-			print(query_key +'\t'+query_val+'\t'+recip)
+			if query_key == recip:
+				out.write(query_key+'\t'+query_val+'\t'+recip+'\n')
+				out.flush()
+				print('Query:', query_key, 'Target:', query_val, 'Reciprocal:', recip)
+		out.close()
+		print('Analysis complete given', self.hits_query.get_base_name(),
+			'and', self.hits_target.get_base_name())		
 
 # Given an isoform accession, trim end-dot to yield gene name
 def isoform_to_gene(accession):
