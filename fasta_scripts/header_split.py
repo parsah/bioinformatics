@@ -12,7 +12,6 @@ def parse_fasta(fname):
 				seqs[header] = ''
 			else:
 				seqs[header]+=line
-		print(len(seqs), 'entries parsed')
 		return seqs
 	else:
 		raise IOError('Input file:' + fname + ' is an invalid file')
