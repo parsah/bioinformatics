@@ -94,18 +94,35 @@ class MutuallyConservedGeneSet():
 # analysis is the pairwise alignment between a query and target organism.
 class MultiSpeciesConservedSet():
 	def __init__(self, files):
-		self.files = files
-		self.union_geneset = set()
+		self.files = list(set(files)) # remove duplicate filenames
+		self.cons_geneset = {} # references genes conserved amongst all files
 	
 	# Find all the genes which are found within all the files
 	def union(self):
-		for f in self.files:
-			for line in open(f).readlines()[1:]: # skip first line; is header
+		gene_set, no_hit_str = {}, None
+		for file_no, fname in enumerate(self.files):
+			for line in open(fname).readlines()[1:]: # skip first line; header
 				line = line.strip().split('\t')
-				self.union_geneset.add(line[0]) # add first column (gene)
-		print(len(self.union_geneset), 'entries given', len(self.files), 'files')
-		
-		
+				gene, target = line[0], line[1]
+				if gene not in gene_set:
+					# create array however long the number of files are
+					gene_set[gene] = [no_hit_str] * len(self.files)
+				# set the target to the index of its file
+				gene_set[gene][file_no] = target
+		# remove entries which are not conserved across all species
+		for i in gene_set:
+			if gene_set[i].count(no_hit_str) == 0:
+				self.cons_geneset[i] = gene_set[i]
+					
+	# Iterate through each file and see if the gene is conserved in other files.
+	def output_conserved(self):
+		out = open('conserved.tab', 'w')
+		for counter, i in enumerate(self.cons_geneset):
+			s = str(counter+1)+'\t' + i +'\t'+ '\t'.join(self.cons_geneset[i])
+			out.write(s + '\n')
+			out.flush()
+		out.close()
+		print('Analysis complete,', len(self.cons_geneset), 'conserved regions')
 
 # Given an isoform accession, trim end-dot to yield gene name
 def isoform_to_gene(accession):
@@ -134,7 +151,8 @@ if __name__ == '__main__':
 			gs.join(whole_isoform=args['whole_isoform'])
 		elif args['merge']: # if merging of inputs wishes to be performed
 			conserved_set = MultiSpeciesConservedSet(files=args['merge'])
-			conserved_set.union()
+			conserved_set.union() # union of genes given all files 
+			conserved_set.output_conserved() # output conserved genes to file
 			
 	except OSError as e:
 		print(e)
