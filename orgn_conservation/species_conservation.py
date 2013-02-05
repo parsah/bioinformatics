@@ -38,7 +38,6 @@ class BLASTPResults():
 	def get_results(self):
 		return self.data	
 		
-
 # Represents genes which are mutually conserved between two organisms.
 # Two input files comprise this gene-set: a query and target. The query
 # is such that the first column is the query organism gene, and its second
@@ -89,7 +88,24 @@ class MutuallyConservedGeneSet():
 				print('Query:', query_key, 'Target:', query_val, 'Reciprocal:', recip)
 		out.close()
 		print('Analysis complete given', self.hits_query.get_base_name(),
-			'and', self.hits_target.get_base_name())		
+			'and', self.hits_target.get_base_name())
+		
+# Models which genes are conserved across all user-provided analysis. Each
+# analysis is the pairwise alignment between a query and target organism.
+class MultiSpeciesConservedSet():
+	def __init__(self, files):
+		self.files = files
+		self.union_geneset = set()
+	
+	# Find all the genes which are found within all the files
+	def union(self):
+		for f in self.files:
+			for line in open(f).readlines()[1:]: # skip first line; is header
+				line = line.strip().split('\t')
+				self.union_geneset.add(line[0]) # add first column (gene)
+		print(len(self.union_geneset), 'entries given', len(self.files), 'files')
+		
+		
 
 # Given an isoform accession, trim end-dot to yield gene name
 def isoform_to_gene(accession):
@@ -100,9 +116,9 @@ def isoform_to_gene(accession):
 def create_parser():
 	desc = 'Identify conserved genes across multi-species BLASTP hits'
 	p = argparse.ArgumentParser(description = desc)
-	p.add_argument('-query', metavar='', 
+	p.add_argument('-query', metavar='', default=None,
 		help='Query BLASTP results; 2 columns, tab-delimited [na]')
-	p.add_argument('-target', metavar='', 
+	p.add_argument('-target', metavar='', default=None,
 		help='Target BLASTP results; 2 columns, tab-delimited [na]')
 	p.add_argument('-merge', metavar='', nargs='+',
 		help='Finds conserved genes across multiple GeneSet objects')
@@ -113,7 +129,12 @@ def create_parser():
 if __name__ == '__main__':
 	try:
 		args = create_parser() # parse args and create a conserved gene-set
-		gs = MutuallyConservedGeneSet(query=args['query'], target=args['target'])
-		gs.join(whole_isoform=args['whole_isoform'])
+		if args['query'] and args['target']: # only if inputs have been provided
+			gs = MutuallyConservedGeneSet(query=args['query'], target=args['target'])
+			gs.join(whole_isoform=args['whole_isoform'])
+		elif args['merge']: # if merging of inputs wishes to be performed
+			conserved_set = MultiSpeciesConservedSet(files=args['merge'])
+			conserved_set.union()
+			
 	except OSError as e:
 		print(e)
