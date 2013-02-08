@@ -37,6 +37,28 @@ class BLASTPResults():
 	# Get BLASTP results
 	def get_results(self):
 		return self.data	
+
+# Encapsulates accessions which map to their respective reciprocal
+class ConservedEntry():
+	def __init__(self, query, hit, recip):
+		self.query = query
+		self.hit = hit
+		self.recip = recip
+		
+	def __eq__(self, other):
+		# Identity is solely based on the query ID name
+		if isinstance(other, ConservedEntry):
+			return (self.query == other.query)
+	
+	def __key(self): # define a conserved region
+		return (self.query)
+	
+	def __hash__(self):
+		return hash(self.__key())
+	
+	# Return the states of the current object
+	def get_entry(self):
+		return self.query+'\t'+self.hit+'\t'+self.recip
 		
 # Represents genes which are mutually conserved between two organisms.
 # Two input files comprise this gene-set: a query and target. The query
@@ -68,6 +90,7 @@ class MutuallyConservedGeneSet():
 	# the accession is trimmed upto the first dot. Preceeding this is the gene.
 	def join(self, whole_isoform):
 		out = self.create_output_file() # create output file
+		results = set()
 		for query_key in self.hits_query.get_results():
 			# Use value to see if it is a key in the target; implies conservation
 			query_val = self.hits_query.get_results()[query_key]
@@ -83,9 +106,13 @@ class MutuallyConservedGeneSet():
 					query_key = isoform_to_gene(query_key) # gene-query
 					query_val = isoform_to_gene(query_val) # gene-homolog
 			if query_key == recip:
-				out.write(query_key+'\t'+query_val+'\t'+recip+'\n')
-				out.flush()
+				region = ConservedEntry(query=query_key, hit=query_val, recip=recip)
+				results.add(region) # save the conserved region and save later
 				print('Query:', query_key, 'Target:', query_val, 'Reciprocal:', recip)
+		
+		for region in results: # next, write contents to a file
+			out.write(region.get_entry()+'\n')
+			out.flush()
 		out.close()
 		print('Analysis complete given', self.hits_query.get_base_name(),
 			'and', self.hits_target.get_base_name())
