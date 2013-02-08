@@ -1,5 +1,5 @@
-
 import argparse, os
+from collections import Counter
 
 # A wrapper for BLASTP results. The file creating such an object is 2x columns
 # large; the first being the query sequence while the latter is the homolog.
@@ -37,28 +37,6 @@ class BLASTPResults():
 	# Get BLASTP results
 	def get_results(self):
 		return self.data	
-
-# Encapsulates accessions which map to their respective reciprocal
-class ConservedEntry():
-	def __init__(self, query, hit, recip):
-		self.query = query
-		self.hit = hit
-		self.recip = recip
-		
-	def __eq__(self, other):
-		# Identity is solely based on the query ID name
-		if isinstance(other, ConservedEntry):
-			return (self.query == other.query)
-	
-	def __key(self): # define a conserved region
-		return (self.query)
-	
-	def __hash__(self):
-		return hash(self.__key())
-	
-	# Return the states of the current object
-	def get_entry(self):
-		return self.query+'\t'+self.hit+'\t'+self.recip
 		
 # Represents genes which are mutually conserved between two organisms.
 # Two input files comprise this gene-set: a query and target. The query
@@ -75,7 +53,7 @@ class MutuallyConservedGeneSet():
 	def create_output_file(self):
 		out = open(self.hits_query.get_base_name() + '_vs_' +\
 			self.hits_target.get_base_name()+'_conserved.tab', 'w')
-		out.write('Query\tTarget\tReciprocal\n')
+		out.write('Query\tTarget\n')
 		out.flush()
 		return out
 	
@@ -90,7 +68,7 @@ class MutuallyConservedGeneSet():
 	# the accession is trimmed upto the first dot. Preceeding this is the gene.
 	def join(self, whole_isoform):
 		out = self.create_output_file() # create output file
-		results = set()
+		results = {}
 		for query_key in self.hits_query.get_results():
 			# Use value to see if it is a key in the target; implies conservation
 			query_val = self.hits_query.get_results()[query_key]
@@ -106,14 +84,19 @@ class MutuallyConservedGeneSet():
 					query_key = isoform_to_gene(query_key) # gene-query
 					query_val = isoform_to_gene(query_val) # gene-homolog
 			if query_key == recip:
-				region = ConservedEntry(query=query_key, hit=query_val, recip=recip)
-				results.add(region) # save the conserved region and save later
-				print('Query:', query_key, 'Target:', query_val, 'Reciprocal:', recip)
+				results[query_key] = query_val # save the conserved region and save later
+				#print('Query:', query_key, 'Target:', query_val, 'Reciprocal:', recip)
 		
-		for region in results: # next, write contents to a file
-			out.write(region.get_entry()+'\n')
-			out.flush()
-		out.close()
+		# A dictionary of query -> target hits are now present such that the 
+		# reverse is true. Some targets though are isoforms and 
+		# gene-representation produces duplicate entries.
+		# eg. AAA.1 and AAA.2 yield AAA AAA, therefore duplicates.
+		counts = Counter(results.values()) # target => frequency
+		for query in results:
+			if counts[results[query]] == 1:
+				print('Query: '+query+'\tTarget: '+results[query])
+				out.write(query+'\t'+results[query] + '\n')
+				out.flush()
 		print('Analysis complete given', self.hits_query.get_base_name(),
 			'and', self.hits_target.get_base_name())
 		
