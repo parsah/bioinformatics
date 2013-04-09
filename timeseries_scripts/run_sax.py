@@ -55,6 +55,8 @@ class SAXRunner():
         sd = numpy.std(self.c)
         v = []
         for i in self.c:
+            if sd == 0: # to avoid divide-by-zero, stdev becomes very small
+                sd = 1e-5
             normed = (i - mean) / sd
             v.append(normed)
         self.normed = v
@@ -65,7 +67,6 @@ class SAXRunner():
         function. Mapping is whereby "A" references lowest values and vice-versa.
         '''
         segments = _split_list(rand_norm_nums, parts=self.a)
-#        print(segments)
         segments[0].insert(0, -sys.maxsize) # add upper and lower-bound values.
         segments[-1].append(sys.maxsize)
         chars = list(string.ascii_uppercase)
@@ -119,4 +120,4 @@ if __name__ == '__main__':
         sax.normalize()
         sax.paa()
         strata = sax.stratify(rand_norm_nums)
-        print(sax.representation())
+        sys.stdout.write(sax.representation() + '\n')
