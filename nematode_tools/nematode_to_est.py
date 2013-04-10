@@ -24,22 +24,7 @@ def get_nematodes():
             'Pratylenchus vulnus',
             'Radopholus similis',
             'Xiphinema index',
-            'Pratylenchus penetrans', # from cals.ncsu.edu (from here beyond)
-            'Pratylenchus vulnus',
-            'Pratylenchus brachyrus',
-            'Pratylenchus zea',
-            'Pratylenchus coffee',
-            'Pratylenchus scribneri'
-            'Heterodera avenae',
-            'Heterodera trifolii',
-            'Globodera tabacum',
-            'Ditylenchus dipsaci',
-            'Ditylenchus destructor',
-            'Ditylenchus myceliophagus',
-            'Tylenchulus semipenetrans',
-            'Helicotylenchus dihystera',
-            'Helicotylenchus multicinctus',
-            'Belonolaimus longicaudatus']
+            ]
 
 if __name__ == '__main__':
     print(' OR '.join([i+"[Organism]" for i in get_nematodes()]))
