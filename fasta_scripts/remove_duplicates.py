@@ -18,7 +18,8 @@ def process_seqs(fname):
     for record in records:
         sha512 = hashlib.sha512()
         header, sequence = record.description, str(record.seq)
-        sha512.update(sequence)
+        as_bytes = sequence.encode(encoding='utf-8')
+        sha512.update(as_bytes)
         hex_repr = sha512.hexdigest()
         if hex_repr not in hashes: # if sequence is unique, send to stdout.
             hashes.add(hex_repr)
