@@ -23,7 +23,7 @@ class Merger():
             header.append(os.path.basename(rf.fname))
         print('\t'.join(header))        
         for tfbs in self.tfbs_set:
-            abundances = ['-'] * 3
+            abundances = ['-'] * len(self.resultfiles)
             for num, rf in enumerate(self.resultfiles):
                 if tfbs in rf.set_tfbs:
                     abundances[num] = rf.set_tfbs[tfbs] # set its IPF
