@@ -21,4 +21,4 @@ for entry in entries: # iterate over each entry and determine if annotation is a
 		or 'Unknown' in entry.description:
 		pass
 	else: # if annotation is specific, send to standard-out
-		print '>'+entry.id+'|'+entry.name+'\n'+entry.seq
+		print('>'+entry.id+'|'+entry.name+'\n'+entry.seq)

@@ -11,7 +11,7 @@ def parse(input_file):
 		seq = line[8]
 		comment = '+'
 		qual_str = line[9]
-		print header+'\n'+seq+'\n' + comment + '\n' + qual_str
+		print(header+'\n'+seq+'\n' + comment + '\n' + qual_str)
 
 # Simple script to convert a qseq file to fastq; conversion sent to stdout	
 def main():
@@ -28,7 +28,7 @@ def main():
 		else:
 			parse(args['input'])
 	except IOError as e:
-		print e, 'is an invalid file'
+		print(e, 'is an invalid file')
 	
 if __name__ == '__main__':
 	main()

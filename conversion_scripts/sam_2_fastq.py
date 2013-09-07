@@ -22,4 +22,4 @@ if __name__ == '__main__':
 			# character, ignore the entry (as it is desired to be ignored)
 			if ignore_char in chrom:
 				fastq_str = '@'+header+'\n'+seq+'\n+\n'+qual
-				print fastq_str
+				print(fastq_str)

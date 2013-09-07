@@ -1,7 +1,10 @@
-import Bio
+''' 
+A very useful script to filter FASTA sequences if a specified filter-string
+is provided. Sequences satisfying this criteria will be kept.
+'''
+
 import sys
 import argparse
-
 from Bio import SeqIO
 
 def filter_seqs(fname, pattern):

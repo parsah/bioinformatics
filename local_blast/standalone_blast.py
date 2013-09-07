@@ -21,7 +21,7 @@ def callback(return_from_blast):
 	CURR_COUNTER+=1
 	output_str = process_blast_xml(fasta_id, xml_file)
 	
-	print '[',CURR_COUNTER, '/', NUM_ENTRIES,']', fasta_id,'\t', output_str
+	print('[',CURR_COUNTER, '/', NUM_ENTRIES,']', fasta_id,'\t', output_str)
 	OUT_HANDLE.write(fasta_id+'\t'+output_str+'\n')
 	OUT_HANDLE.flush()
 	
@@ -119,10 +119,10 @@ def parse_fasta():
 			else:
 				seqs[header]+=line
 		NUM_ENTRIES = len(seqs)
-		print '#/fasta entries:', NUM_ENTRIES
+		print('#/fasta entries:', NUM_ENTRIES)
 		return seqs
 	except IOError:
-		print '[ERROR] input file:', INPUT_FILE, 'not found'
+		print('[ERROR] input file:', INPUT_FILE, 'not found')
 	
 
 def execute_program():
@@ -141,8 +141,8 @@ def execute_program():
 	OUT_HANDLE = open(out_file, 'w')
 	
 	pool = multiprocessing.Pool(processes=NUM_PROCESSES)
-	print BLAST_PROG, 'LOCAL BLAST\t', DB_NAME
-	print '='*20,'#/worker processes:', NUM_PROCESSES,'='*20
+	print(BLAST_PROG, 'LOCAL BLAST\t', DB_NAME)
+	print('='*20,'#/worker processes:', NUM_PROCESSES,'='*20)
 	dict_ids_seqs = parse_fasta()
 	
 	for fasta_id in dict_ids_seqs:
@@ -153,10 +153,10 @@ def execute_program():
 	pool.terminate()
 	
 	OUT_HANDLE.close()
-	print '\n','='*20, BLAST_PROG,'of',NUM_ENTRIES,'seqs complete','='*20
-	print 'total time: %.4f sec' % (time.time() - start_time),\
-		'[ HIT:',NUM_WITH_HIT,'/',NUM_ENTRIES,';','NO HIT:',NUM_WITHOUT_HIT,'/',NUM_ENTRIES,']'
-	print 'output saved to [',out_file,']\n'
+	print('\n','='*20, BLAST_PROG,'of',NUM_ENTRIES,'seqs complete','='*20)
+	print('total time: %.4f sec' % (time.time() - start_time),\
+		'[ HIT:',NUM_WITH_HIT,'/',NUM_ENTRIES,';','NO HIT:',NUM_WITHOUT_HIT,'/',NUM_ENTRIES,']')
+	print('output saved to [',out_file,']\n')
 
 if __name__ == '__main__':
 	in_file, out_file = '', '' 
@@ -175,10 +175,10 @@ if __name__ == '__main__':
 	DB_FOLDER = parser.db_folder
 	if all([BLAST_EVALUE, BLAST_PROG, NUM_PROCESSES,INPUT_FILE,\
 			DB_FOLDER]):
-		print BLAST_EVALUE, os.path.isfile(BLAST_PROG), BLAST_PROG
+		print(BLAST_EVALUE, os.path.isfile(BLAST_PROG), BLAST_PROG)
 		execute_program()
 	else:
-		print '[ERROR] >=1 parameters are required:'
-		print '-prog:', BLAST_PROG, '\n-evalue:', BLAST_EVALUE, '\n-in:', INPUT_FILE,\
-			'\n-blast_db:', DB_FOLDER,'\n-num_proc:',NUM_PROCESSES
+		print('[ERROR] >=1 parameters are required:')
+		print('-prog:', BLAST_PROG, '\n-evalue:', BLAST_EVALUE, '\n-in:', INPUT_FILE,\
+			'\n-blast_db:', DB_FOLDER,'\n-num_proc:',NUM_PROCESSES)
 	

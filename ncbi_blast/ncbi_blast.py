@@ -75,7 +75,7 @@ def get_num_entries():
 
 def begin_blast(input_filename):
 	get_num_entries()
-	print '\nSTARTING BLAST - ' + time.asctime()+'\tID:'+str(UNIQUE_ID)+'\n'
+	print('\nSTARTING BLAST - ' + time.asctime()+'\tID:'+str(UNIQUE_ID)+'\n')
 	in_handle = open(input_filename, 'r') # read fasta file and parse
 	in_handle = SeqIO.parse(in_handle, 'fasta') 
 	
@@ -84,7 +84,7 @@ def begin_blast(input_filename):
 	for counter, each_fasta in enumerate(in_handle): # for each fasta entry ...
 		header = str(each_fasta.description) # to-string its header
 		seq = str(each_fasta.seq) # to-string the sequence and BLAST it
-		print '['+str(counter+1)+'/'+str(NUM_ENTRIES)+'] - '+header+'... ',
+		print('['+str(counter+1)+'/'+str(NUM_ENTRIES)+'] - '+header+'... ')
 		blast_result = NCBIWWW.qblast(PROGRAM, DATABASE, seq, EXPECT, descriptions=5)
 		blast_result = blast_result.read() # read the object contents to string
 		
@@ -101,9 +101,8 @@ def begin_blast(input_filename):
 		output_handle.flush()
 		output_handle.write('\n')
 		output_handle.flush()
-		print 'OK'
 	output_handle.close()
-	print '\nBLAST COMPLETE - ' + time.asctime()
+	print('\nBLAST COMPLETE - ' + time.asctime())
 	
 if __name__ == '__main__':
 	global IN_FILENAME, OUT_FILENAME, UNIQUE_ID
@@ -115,7 +114,7 @@ if __name__ == '__main__':
 	(options, args) = parser.parse_args()
 	
 	if not options.in_file or not options.out_file or not options.value:
-		print 'values must be provided for each argument. see -h for info'
+		print('values must be provided for each argument. see -h for info')
 		
 	else:
 		IN_FILENAME = str(options.in_file)
@@ -124,8 +123,8 @@ if __name__ == '__main__':
 		
 		if '.txt' in OUT_FILENAME:	
 			OUT_FILENAME = OUT_FILENAME.replace('.txt', '_'+UNIQUE_ID+'.txt')
-			print 'input:', IN_FILENAME
-			print 'output:', OUT_FILENAME
-			print 'unique ID:', UNIQUE_ID
+			print('input:', IN_FILENAME)
+			print('output:', OUT_FILENAME)
+			print('unique ID:', UNIQUE_ID)
 			begin_blast(IN_FILENAME)
 		

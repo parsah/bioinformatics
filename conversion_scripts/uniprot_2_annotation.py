@@ -4,8 +4,10 @@ Several 'modes' exist so that annotations only of this type are obtained;
 useful in cases when you seek to only update annotations of a particular type.
 """
 
-import argparse, urllib2
+import argparse, urllib
 from xml.etree import ElementTree 
+from urllib.request import urlopen
+from urllib.error import HTTPError
 
 modes = ['ec', 'go', 'desc', 'pfam'] # modes of analysis
 no_hit = '---' # displayed when no annotation is possible
@@ -39,7 +41,7 @@ class AnnotationFactory():
 	
 	# Get PFAM IDs given the uniprot accession-list
 	def get_pfam(self):
-		print 'UNIPROT\tPFAM' # print header
+		print('UNIPROT\tPFAM') # print header
 		for accn in self.uniprot_accns:
 			try:
 				u = UniprotXML(accn)
@@ -47,13 +49,13 @@ class AnnotationFactory():
 				pfam = div.join([node.attrib['id'] for node in pf_tree 
 							if 'Pfam' in node.attrib['type']])
 				pfam = no_hit if pfam == '' else pfam
-				print accn + '\t' + pfam
+				print(accn + '\t' + pfam)
 			except Exception:
-				print accn + '\t' + no_hit
+				print(accn + '\t' + no_hit)
 		
 	# get all ECs given the list of uniprot accessions
 	def get_ecs(self):
-		print 'UNIPROT\tEC' # print header
+		print('UNIPROT\tEC') # print header
 		for accn in self.uniprot_accns:
 			try:
 				u = UniprotXML(accn)
@@ -61,13 +63,13 @@ class AnnotationFactory():
 				ec = div.join([node.attrib['id']
 							for node in ec_tree if 'EC' in node.attrib['type']])
 				ec = no_hit if ec == '' else ec
-				print accn + '\t' + ec
+				print(accn + '\t' + ec)
 			except Exception:
-				print accn + '\t' + no_hit
+				print(accn + '\t' + no_hit)
 	
 	# get all GO ontologies given the list of uniprot accessions
 	def get_gos(self):
-		print 'UNIPROT\tGO_COMP\tGO_FUNC\tGO_PROC'
+		print('UNIPROT\tGO_COMP\tGO_FUNC\tGO_PROC')
 		for acc in self.uniprot_accns:
 			try:
 				u = UniprotXML(acc)
@@ -84,9 +86,9 @@ class AnnotationFactory():
 							if 'C:' in value:
 								comp.append(value[2:]) # add 'C:'
 				c, f, p = self._string_go(c=comp, f=func, p=proc)
-				print acc + '\t' + c + '\t' + f + '\t' + p
+				print(acc + '\t' + c + '\t' + f + '\t' + p)
 			except Exception:
-				print acc + '\t' + no_hit + '\t' + no_hit + '\t' + no_hit
+				print(acc + '\t' + no_hit + '\t' + no_hit + '\t' + no_hit)
 	
 	# Helper-function to convert GO ontologies to string objects
 	def _string_go(self, c, f, p):
@@ -101,14 +103,14 @@ class AnnotationFactory():
 		
 	# get the uniprot description for the accession 
 	def get_desc(self):
-		print 'UNIPROT\tUNIPROT_DESC'
+		print('UNIPROT\tUNIPROT_DESC')
 		for accn in self.uniprot_accns:
 			try:
 				u = UniprotXML(accn) # uniprot xml encapsulation
 				desc = [n.text for n in u.tree.getiterator(self.schema+'fullName')]
-				print accn + '\t' + desc[0] # get the description
+				print(accn + '\t' + desc[0]) # get the description
 			except Exception:
-				print accn + '\t' + no_hit
+				print(accn + '\t' + no_hit)
 			
 # A UniprotXML is an encapsulation of the XML file given its web-service
 class UniprotXML():
@@ -120,7 +122,7 @@ class UniprotXML():
 	# _parse the XML referencing the uniprot accession
 	def _parse(self):
 		xml_fname = 'http://www.uniprot.org/uniprot/' + self.accn + '.xml'
-		data = urllib2.urlopen(xml_fname).read()
+		data = urlopen(xml_fname).read()
 		self.tree = ElementTree.XML(data)
 
 if __name__ == '__main__':

@@ -4,7 +4,7 @@ master annotation dataset. The purpose of this script is to deduce
 differentially-expressed transcripts.
 """
 
-import argparse, csv, math, operator, os
+import argparse, csv, math, os
 
 class CountBuild():
 	""" 

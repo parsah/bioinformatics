@@ -35,12 +35,12 @@ def merge(annotations, counts):
     """
     for transcript_id in annotations:
         if transcript_id not in counts:
-           # if the transcript does not have any reads, set count to 0.
-           print(transcript_id+"\t" + str(0)+"\t"+\
+            # if the transcript does not have any reads, set count to 0.
+            print(transcript_id+"\t" + str(0)+"\t"+\
                  annotations[transcript_id])
         else:
-           # if the transcript has reads, get its count.
-           print(transcript_id+"\t" + str(counts[transcript_id])+"\t"+\
+            # if the transcript has reads, get its count.
+            print(transcript_id+"\t" + str(counts[transcript_id])+"\t"+\
                  annotations[transcript_id]) 
 
 if __name__ == '__main__':

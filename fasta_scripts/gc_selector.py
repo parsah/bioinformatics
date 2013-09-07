@@ -49,13 +49,11 @@ def run_script(args):
     
     for query_header in seqs_query: # iterate over each query
         query_seq = seqs_query[query_header]
-        query_len = len(query_seq)
         query_gc_pct = gc_percentage(query_seq)
         is_matched = False # flag whether the query has a corresponding baseline
         
         for candidate_header in seqs_candidate: # ... and over each candidate
             candidate_seq = seqs_candidate[candidate_header]['seq']
-            candidate_len = len(candidate_seq)
             candidate_gc_pct = gc_percentage(candidate_seq)
             
             # test whether the candidate sequence is current paired or not

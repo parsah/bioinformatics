@@ -17,10 +17,10 @@ def main():
 def get_desired_seqs(total_seqs, to_keep):
 	for seq in to_keep:
 		if seq not in total_seqs: # if a desired seq is not in the master, exit
-			print seq, 'is not in the fasta file'
+			print(seq, 'is not in the fasta file')
 			break
 		else: # if the desired seq is found, print-out to stdout stream
-			print '>'+seq+'\n'+total_seqs[seq]
+			print('>'+seq+'\n'+total_seqs[seq])
 
 # Parse a list of user-provided fasta headers; entries to keep
 def parse_list(fname):
@@ -43,7 +43,7 @@ def parse_fasta(fname):
 				seqs[header]+=line
 		return seqs
 	except IOError:
-		print '[ERROR] input file:', fname, 'not found'
+		print('[ERROR] input file:', fname, 'not found')
 
 if __name__ == '__main__':
 	main()

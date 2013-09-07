@@ -13,7 +13,7 @@ def parse_fasta(infile):
 			seqs[header] = ''
 		else:
 			seqs[header]+=line
-	print '#/fasta entries:', len(seqs),'\n'
+	print('#/fasta entries:', len(seqs),'\n')
 	return seqs
 
 def get_ORFs(sequence, title, cutoff):
@@ -73,7 +73,7 @@ def main():
 	if args['in']:
 		entries = parse_fasta(args['in'])
 		for entry in entries:
-			print get_ORFs(sequence=entries[entry], title=entry, cutoff=args['cutoff'])
+			print(get_ORFs(sequence=entries[entry], title=entry, cutoff=args['cutoff']))
 		
 
 if __name__ == '__main__':
