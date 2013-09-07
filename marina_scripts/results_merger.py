@@ -18,7 +18,7 @@ class Merger():
             self.tfbs_set.update(set(list(rf.set_tfbs.keys())))
             
     def merge(self):
-        header = []
+        header = ['TFBS'] # very first column references TFBSs
         for rf in self.resultfiles:
             header.append(os.path.basename(rf.fname))
         print('\t'.join(header))        
