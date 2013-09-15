@@ -1,3 +1,11 @@
+''' 
+Upon running FIMO with the --text flag activated, information regarding 
+p-value significance and PWM alignment is produced. Activation of the --text
+flag does not however compute any p-value adjustment. As a result, such
+computations must be derived outside of FIMO. Therefore, this script computes
+p-value adjustments given output from FIMO --text mode.
+'''
+
 import argparse
 import os
 import rpy2.robjects as robjects
@@ -6,7 +14,7 @@ motif_ext = '.tmp' # filename extension of motif files
 
 def get_motifs(fname):
     ''' 
-    Get all available motifs within a FIMO output file.
+    Gets all available motifs within a FIMO output file.
     @param fname: Input FIMO filename.
     '''
     motifs = {}
