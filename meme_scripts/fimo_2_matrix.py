@@ -41,13 +41,26 @@ def build_matrix(fname):
     @param fname: Input FIMO filename. 
     '''
     ids = get_identifiers(fname)
-    for i in ids:
-        print(i, ids[i])
+    column_names = ['Sequence'] # build column names
+    column_names.extend(list(ids[list(ids.keys())[0]].keys()))
+    for linenum, i in enumerate(open(fname)):
+        if linenum > 0:
+            i = i.strip().split('\t')
+            motif, accn = i[0:2]
+            ids[accn][motif] += 1 # increment motif count in specific accession
+    
+    # prints-out names of each TFBS as a column
+    print('\t'.join(column_names))
+    for accn in ids:
+        counts = [str(i) for i in list(ids[accn].values())]
+        print(accn +'\t' + '\t'.join(counts)) # prints out counts per transcript
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-i', metavar='FILE', required=True,
-                        help='p-value adjusted from FIMO using --text mode [na]')
-    args = vars(parser.parse_args())
-    build_matrix(fname = args['i'])
-    
+    try:
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-i', metavar='FILE', required=True,
+                            help='p-value adjusted from FIMO using --text mode [na]')
+        args = vars(parser.parse_args())
+        build_matrix(fname = args['i'])
+    except KeyboardInterrupt:
+        pass
