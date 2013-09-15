@@ -58,11 +58,16 @@ def adjust(p_cutoff, m):
             if adj_pval < p_cutoff:
                 each_line[7] = str(adj_pval) # set adjusted p-value
                 print('\t'.join(each_line))
-    clean() # remove all temporary files
         
 def clean():
-    motifs = [os.curdir + '/' + i for i in os.curdir if i.endswith(motif_ext)]
+    ''' 
+    Removes remnants of any temporary files.
+    '''
+    contents = os.listdir(os.curdir) # current file contents; remove temp files
+    motifs = [os.curdir + '/' + i for i in contents if i.endswith(motif_ext)]
     for i in motifs:
+        handle = open(i)
+        handle.close()
         os.remove(i)
 
 if __name__ == '__main__':
@@ -70,7 +75,8 @@ if __name__ == '__main__':
         parser = argparse.ArgumentParser()
         parser.add_argument('-i', metavar='FILE', required=True,
                             help='Output file with --text mode from FIMO [na]')
-        parser.add_argument('-pv', metavar='FLOAT', required=False, default=0.05,
+        parser.add_argument('-pv', metavar='FLOAT', required=False, 
+                            default=0.05, type=float,
                             help='Adjusted p-value cutoff [0.05]')
         parser.add_argument('-method', metavar='STR', required=False,
                             choices=["holm", "hochberg", "hommel", 
