@@ -27,11 +27,15 @@ def run(fname, is_filter):
             display_seq(header = i.description, seq = corrected_seq)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
+    d = """
+    FASTA filter script. Non-ATGCN bases are by-default filtered. The --mask
+    option replaces such bases with an N so that the sequence is kept.
+    """
+    parser = argparse.ArgumentParser(description=d)
     parser.add_argument('-i', required=True, metavar='FASTA',
                         help='FASTA file [na]')
-    parser.add_argument('--filter', action='store_const', const=True,
-                        default=False, help='Filter non-ATGCN bases [false]')
+    parser.add_argument('--mask', action='store_const', const=True,
+                        default=False, help='Mask non-ATGCN bases as N [false]')
     args = vars(parser.parse_args())
-    run(fname = args['i'], is_filter = args['filter'])
+    run(fname = args['i'], is_filter = args['mask'])
     
