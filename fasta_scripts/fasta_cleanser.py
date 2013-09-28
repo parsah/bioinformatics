@@ -31,7 +31,7 @@ if __name__ == '__main__':
     parser.add_argument('-i', required=True, metavar='FASTA',
                         help='FASTA file [na]')
     parser.add_argument('--filter', action='store_const', const=True,
-                        default=False, help='Filter non-ATGCN bases [true]')
+                        default=False, help='Filter non-ATGCN bases [false]')
     args = vars(parser.parse_args())
     run(fname = args['i'], is_filter = args['filter'])
     
