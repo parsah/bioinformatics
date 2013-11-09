@@ -1,10 +1,10 @@
-# Useful script for mining NCBI ESTs given species names of preset
-# nematodes.
+'''
+Useful script for mining NCBI ESTs given species names of preset nematodes.
+'''
 
 import argparse
 import sys
 from Bio import Entrez
-from numpy.lib.recfunctions import get_names
 
 def get_nematodes():
     return ['Ditylenchus africanus', # from nematode.net (from here beyond)
@@ -25,14 +25,7 @@ def get_nematodes():
             'Radopholus similis',
             'Xiphinema index',
             ]
-
-if __name__ == '__main__':
-    print(' OR '.join([i+"[Organism]" for i in get_nematodes()]))
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-out', help='Output FASTA [na]', metavar='FILE', required=True)
-    parser.add_argument('-email', help='Email [na]', metavar='STR', required=True)
-    args = vars(parser.parse_args())
+def run(args):
     Entrez.email= args["email"]
     outhandle = open(args["out"], "w")
     num_seqs = 0
@@ -43,13 +36,23 @@ if __name__ == '__main__':
         num_seqs += num_counts
         sys.stdout.write(each_org + " => #/ESTs: " + str(num_counts) + "\n")
         entrez_ids = record["IdList"]
-        for num, each_entry in enumerate(entrez_ids):
+        for num, gi_accn in enumerate(entrez_ids):
             sys.stdout.write("\t" + str(num+1)+'/'+str(len(entrez_ids)) +\
-                             " => " + each_entry + "\n")
+                             " => GI: " + gi_accn + "\n")
             sys.stdout.flush()
-            res = Entrez.efetch(db="nucest", id=each_entry, rettype="fasta", 
+            res = Entrez.efetch(db="nucest", id=gi_accn, rettype="fasta", 
                                 retmode="text")
             outhandle.write(res.read().strip() + "\n")
             outhandle.flush()
     outhandle.close()
     sys.stdout.write("Analysis complete\n")
+    
+if __name__ == '__main__':
+    try:
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-out', help='Output FASTA [na]', metavar='FILE', required=True)
+        parser.add_argument('-email', help='Email [na]', metavar='STR', required=True)
+        args = vars(parser.parse_args())
+        run(args)
+    except KeyboardInterrupt:
+        sys.stdout.write("Analysis terminated\n")
