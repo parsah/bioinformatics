@@ -16,13 +16,13 @@ def query_genbank(fname, db, email):
     @param email: User-provided email address
     '''
     Entrez.email = email
-    for i, kw in enumerate(open(fname)):
-        kw = kw.strip()
+    for kw in open(fname):
+        kw = kw.strip() # NCBI Entrez ID
         if len(kw) > 0:
-            gi_accession = None
+            gi_accession = None # represents best hit
             search_hits = Entrez.esearch(db = db, term = kw) # get search hits
             record = Entrez.read(search_hits)
-            if record['Count'] > 0:
+            if int(record['Count']) > 0:
                 for gi in record['IdList']:
                     handle  = Entrez.efetch(db = db, id=gi, rettype="gb", 
                                             retmode="text").read() # get GI entry
@@ -34,13 +34,11 @@ def query_genbank(fname, db, email):
                         gi_accession = in_handle # GI accession contains keyword
                         break
             if gi_accession:
-                print kw, '->' ,gi_accession.description
+                print(kw, '\t' ,gi_accession.id) # print matching entrez ID
             else:
-                print kw, '->' ,str(None)
+                print(kw, '\t' ,str(None))
         else:
-            print ' ', '->' ,str(None)
-                
-        
+            print(' ', '\t' ,str(None))
         sys.stdout.flush()
 
 if __name__ == '__main__':
@@ -53,5 +51,7 @@ if __name__ == '__main__':
     parser.add_argument('-email', metavar='STR', required=True,
                             help='User-provided email [none]')
     args = vars(parser.parse_args())
-    query_genbank(fname = args['i'], email = args['email'], db = args['db'])
-
+    try:
+        query_genbank(fname = args['i'], email = args['email'], db = args['db'])
+    except KeyboardInterrupt:
+        sys.stdout.write('Analysis terminated\n')

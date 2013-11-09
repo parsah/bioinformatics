@@ -8,7 +8,7 @@ Trivial script to remove a leading adapter from a FASTQ file.
 def remove_adapter(fastq, adapter):
     # Parse FASTQ and remove all adapter instances and respective quality.
     records = SeqIO.parse(fastq, 'fastq')
-    for counter, entry in enumerate(records):
+    for entry in records:
         seq = str(entry.seq)
         qscores = [i+33 for i in entry.letter_annotations["phred_quality"]]
         if str(entry.seq).startswith(adapter):
