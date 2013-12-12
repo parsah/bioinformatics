@@ -1,24 +1,10 @@
+''' 
+Trivial script to count GC percentage of sequences in a FASTA file.
+'''
+
 import argparse
 import os
-
-def parse_fasta(fname):
-    ''' 
-    Trivial function to parse a FASTA file
-    @param fname: Input FASTA filename
-    @return: dictionary of FASTA sequences; key => header, value => sequence.
-    '''
-    try:
-        seqs, header = {}, ''
-        for line in open(fname):
-            line = line.strip()
-            if line.startswith('>'):
-                header = line[1:] # remove the fasta header
-                seqs[header] = ''
-            else:
-                seqs[header]+=line
-        return seqs
-    except IOError:
-        print('[ERROR] input file:', fname, 'not found')
+from parser import *
 
 def get_gc_content(sequence):
     ''' 

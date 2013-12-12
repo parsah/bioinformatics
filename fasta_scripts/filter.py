@@ -4,6 +4,7 @@ undesired headers.
 '''
 
 import argparse
+from parser import *
 
 def main():
 	desc = 'Filters a fasta file given a list of required fasta entries'
@@ -39,20 +40,6 @@ def parse_list(fname):
 		line = line.strip()
 		seq_to_keep.append(line)
 	return seq_to_keep
-	
-def parse_fasta(fname):
-	try:
-		seqs, header = {}, ''
-		for line in open(fname):
-			line = line.strip()
-			if line.startswith('>'):
-				header = line[1:] # remove the fasta header
-				seqs[header] = ''
-			else:
-				seqs[header]+=line
-		return seqs
-	except IOError:
-		print('[ERROR] input file:', fname, 'not found')
 
 if __name__ == '__main__':
 	main()

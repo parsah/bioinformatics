@@ -33,6 +33,8 @@ def template_generator(fname):
     FASTA file. 
     '''
     entries = parse_fasta(fname)
+    if not entries: # if an invalid template is provided, exit.
+        raise IOError
     seqs = [] # a list of all generated sequences given a template
     for entry in entries:
         seq = str(entries[entry]).upper()
