@@ -1,5 +1,5 @@
 '''
-Script which removed FASTA entries with user-provided invalid characters.
+Script which removes FASTA entries with user-provided invalid characters.
 '''
 
 import argparse

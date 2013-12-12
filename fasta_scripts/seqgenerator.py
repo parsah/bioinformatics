@@ -5,6 +5,7 @@ with a predefined GC percentage.
 
 import argparse
 import random
+from parser import *
 
 def validate_args(args):
     num_seqs, seq_len, gc_perc = args['n'], args['l'], args['gc']
@@ -25,23 +26,6 @@ def output(seqs):
         seq = list(seq)
         random.shuffle(seq)
         print('>sequence_' + str(i + 1) + '\n' + ''.join(seq))
-
-def parse_fasta(fname):
-    ''' 
-    Trivial function to parse a user-provided FASTA file
-    '''
-    try:
-        seqs, header = {}, ''
-        for line in open(fname):
-            line = line.strip()
-            if line.startswith('>'):
-                header = line[1:] # remove the fasta header
-                seqs[header] = ''
-            else:
-                seqs[header]+=line
-        return seqs
-    except IOError:
-        print('input file:', fname, 'not found [error]')
 
 def template_generator(fname):
     ''' 
