@@ -1,3 +1,8 @@
+''' 
+A helpful script for counting GC percentage of a user-provided sequence.
+Such functionality is very useful in instances where you wish to select 
+sequences sharing similar GC or repeat percentages.
+'''
 import argparse
 from Bio import SeqIO
 
