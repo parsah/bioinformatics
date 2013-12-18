@@ -68,6 +68,11 @@ class GCCounter():
         return hits
 
 class BEDSequence():
+    ''' 
+    A BEDSequence object is a string wrapper for easily modeling
+    sequences from BED entries. Such entries are coordinates representing
+    their start and end bases. 
+    '''
     def __init__(self, seq):
         self.seq = seq
         
@@ -103,33 +108,35 @@ class RangeSelector():
         
         # create set of valid FASTA files before any analysis is even performed.
         fasta_files = [f for f in os.listdir(self.fasta_folder)
-                       if f.endswith('.fasta')]
+                       if f.endswith('.fasta') and 'M' not in f] # ignore chrM.fasta
         
         for bed_line in open(self.bed):
             bed_line = bed_line.strip().split('\t')
             # parse the BED entry.
             chrom, start, end = bed_line[0], int(bed_line[1]), int(bed_line[2])
-            print('Analyzing BED entry:',chrom, start, end)
+            print('Analyzing BED entry:', chrom, start, end)
             
             # pull-out the sequence referencing the the BED chromosome.
             record = SeqIO.read(self.fasta_folder + '/' + chrom+'.fasta', 'fasta')
             bed_seq = BEDSequence(seq=record.seq[start: end])
             
+            # choose a random chromosome and extract a suitable segment from it.
             rand_chrom_name = random.choice(fasta_files)
             print('=> BED GC %:', bed_seq.gc_perc(), '; querying', rand_chrom_name, '...')
-            rand_chrom_rec = SeqIO.read(self.fasta_folder + '/' + rand_chrom_name, 'fasta')
+            rand_chrom_record = SeqIO.read(self.fasta_folder + '/' + rand_chrom_name, 'fasta')
             
             # perform GC-counting operations.
-            gcc = GCCounter(seq = str(rand_chrom_rec.seq), win = bed_seq.get_len(), 
+            counter = GCCounter(seq = str(rand_chrom_record.seq), win = bed_seq.get_len(), 
                             basegc = bed_seq.gc_perc(), delta = self.args['d'], 
                             top_num = self.args['t'])
-            hits = gcc.count_gc()
+            hits = counter.count_gc() # get all the matching segments for the BED entry.
             
+            # write results; only one hit is randomly chosen.
             self.outhandle.write('>matched.'+chrom+'.'+str(start)+'.'+str(end) + '\n' +random.choice(hits) + '\n')
-            self.outhandle.flush()
-            
+            self.outhandle.flush() # flush buffer
             print()
-        self.outhandle.close()
+            
+        self.outhandle.close() # application completion
 
 if __name__ == '__main__':
     desc = 'Script to match BED entries with feature-specific genomic regions.'
