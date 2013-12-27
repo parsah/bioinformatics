@@ -6,10 +6,14 @@ representative of a BED file which match its intrinsic properties; serving as
 a baseline or control-set.
 '''
 
-import argparse
 import random
 import os
+import sys
 from Bio import SeqIO # for reading FASTA files.
+from Bio.SeqUtils import GC
+
+BED_FILE = sys.argv[1] # first argument
+GENOME_DIR = sys.argv[2] # folder containing FASTA sequences
 
 class GCCounter():
     ''' 
@@ -67,94 +71,52 @@ class GCCounter():
                 break
         return hits
 
-class BEDSequence():
+def run_selector():
     ''' 
-    A BEDSequence object is a string wrapper for easily modeling
-    sequences from BED entries. Such entries are coordinates representing
-    their start and end bases. 
+    Executes the main algorithm that takes a BED entry and extracts a 
+    corresponding genomic sequence which matches its GC and repeat content.
     '''
-    def __init__(self, seq):
-        self.seq = seq
+    
+    # create set of valid FASTA files before any analysis is even performed.
+    fasta_entries = {}
+    for f in os.listdir(GENOME_DIR):
+        if f.endswith('.fasta') and 'chrM' not in f:
+            record = SeqIO.read(GENOME_DIR + '/' + f, 'fasta')
+            fasta_entries[record.description] = record.seq
+            #print('added', record.description, len(record.seq))
+    
+    for bed_line in open(BED_FILE):
+        bed_line = bed_line.strip().split('\t')
+        # parse the BED entry.
+        chrom, start, end = bed_line[0], int(bed_line[1]), int(bed_line[2])
+        #print('\nAnalyzing BED entry:', chrom, start, end)
         
-    def gc_perc(self):
-        gc_count = float(self.seq.count('G') + self.seq.count('C'))
-        return round(gc_count / self.get_len() * 100, 2)
-    
-    def get_seq(self):
-        return self.seq
-    
-    def get_len(self):
-        return len(self.seq)
+        # pull-out the sequence referencing the the BED chromosome.
+        record = fasta_entries[chrom]
+        bed_sequence = record[start: end] # slice segment
 
-class RangeSelector():
-    ''' 
-    Given genomic ranges defined in a user-provided BED file, this class
-    selects corresponding genomic sequences having equivalent GC and
-    repetitive properties as the genomic range. These resultant sequences
-    are therefore equivalent in intrinsic properties and suitable for 
-    contrast-based analyses.
-    '''
-    def __init__(self, args):
-        self.args = args
-        self.fasta_folder = args['folder']
-        self.bed = self.args['bed']
-        self.outhandle = open(self.args['o'], 'w')        
-    
-    def run_selector(self):
-        ''' 
-        Executes the main algorithm that takes a BED entry and extracts a 
-        corresponding genomic sequence which matches its GC and repeat content.
-        '''
+        # choose a random chromosome and extract a suitable segment from it.
+        keys = list(fasta_entries.keys())
+        keys.remove(chrom) # remove the current ID to avoid duplicates.
+        rand_chrom_name = random.choice(keys)
         
-        # create set of valid FASTA files before any analysis is even performed.
-        fasta_files = [f for f in os.listdir(self.fasta_folder)
-                       if f.endswith('.fasta') and 'M' not in f] # ignore chrM.fasta
+        gc_perc = round(GC(bed_sequence), 2)
+        #print('=> BED GC %:', gc_perc, '; querying', rand_chrom_name, '...')
+        #print(keys)
+        rand_chrom_record = fasta_entries[rand_chrom_name]
         
-        for bed_line in open(self.bed):
-            bed_line = bed_line.strip().split('\t')
-            # parse the BED entry.
-            chrom, start, end = bed_line[0], int(bed_line[1]), int(bed_line[2])
-            print('Analyzing BED entry:', chrom, start, end)
-            
-            # pull-out the sequence referencing the the BED chromosome.
-            record = SeqIO.read(self.fasta_folder + '/' + chrom+'.fasta', 'fasta')
-            bed_seq = BEDSequence(seq=record.seq[start: end])
-            
-            # choose a random chromosome and extract a suitable segment from it.
-            rand_chrom_name = random.choice(fasta_files)
-            print('=> BED GC %:', bed_seq.gc_perc(), '; querying', rand_chrom_name, '...')
-            rand_chrom_record = SeqIO.read(self.fasta_folder + '/' + rand_chrom_name, 'fasta')
-            
-            # perform GC-counting operations.
-            counter = GCCounter(seq = str(rand_chrom_record.seq), win = bed_seq.get_len(), 
-                            basegc = bed_seq.gc_perc(), delta = self.args['d'], 
-                            top_num = self.args['t'])
-            hits = counter.count_gc() # get all the matching segments for the BED entry.
-            
-            # write results; only one hit is randomly chosen.
-            self.outhandle.write('>matched.'+chrom+'.'+str(start)+'.'+str(end) + '\n' +random.choice(hits) + '\n')
-            self.outhandle.flush() # flush buffer
-            print()
-            
-        self.outhandle.close() # application completion
+        # perform GC-counting operations.
+        counter = GCCounter(seq = str(rand_chrom_record), win = len(bed_sequence), 
+                        basegc = gc_perc, delta = 0.2, 
+                        top_num = 10)
+        hits = counter.count_gc() # get all the matching segments for the BED entry.
+        
+        # write results; only one hit is randomly chosen.
+        print('>matched.'+chrom+'.'+str(start)+'.'+str(end) + '\n' +random.choice(hits) + '\n')
 
 if __name__ == '__main__':
-    desc = 'Script to match BED entries with feature-specific genomic regions.'
-    parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('-bed', metavar='FILE', help='BED file [req]',
-                        required=True)
-    parser.add_argument('-folder', metavar='DIR', help='Hard-masked folder of FASTA files [req]',
-                        required=True)
-    parser.add_argument('-d', metavar='FLOAT', help='Difference between BED GC percentage and FASTA [0.1]',
-                        default=0.1, type=float)
-    parser.add_argument('-t', metavar='INT', help='Fetch the top N matching sequences [10]',
-                        default=10, type=int)
-    parser.add_argument('-o', metavar='FILE', help='FASTA output file [./sequences.fasta]',
-                        default='./sequences.fasta')
-    args = vars(parser.parse_args())
     try:
-        rs = RangeSelector(args)
-        rs.run_selector()
+        run_selector()
     except IOError as e:
         print(e)
     except KeyboardInterrupt:
