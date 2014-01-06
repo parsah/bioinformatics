@@ -1,5 +1,6 @@
-
-# Useful script to convert an illumina QSEQ file into fastq
+'''
+Useful script to convert an Illumina QSEQ file into FASTA
+'''
 
 import argparse
 

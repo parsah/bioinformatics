@@ -1,6 +1,6 @@
-
-# Helpful script to convert a SAM file into a fastq file as well as filter
-# sequences having a particular chromosome character
+''' 
+Simple function which converts a SAM file to its FASTQ equivalent.
+'''
 
 import argparse
 
@@ -17,7 +17,7 @@ if __name__ == '__main__':
 		line = line.strip().split('\t') # SAM files are tab-delimited
 		if len(line) > 9:
 			header, chrom, seq, qual = line[0], line[2], line[9], line[10]
-			# If desired character is provided, print entire enty. Also,
+			# If desired character is provided, print entire entry. Also,
 			# if this character does not equal the current chromosome
 			# character, ignore the entry (as it is desired to be ignored)
 			if ignore_char in chrom:

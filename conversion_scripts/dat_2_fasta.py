@@ -1,6 +1,7 @@
-
-# Simple script to convert a Swissprot / Uniprot file to a fasta file.
-# Ambigious annotations ('uncharacterized', 'hypothetical', etc) are not parsed
+''' 
+Simple script to convert a UniProt DAT file to its corresponding
+FASTA file.
+'''
 
 from Bio import SeqIO
 import argparse
