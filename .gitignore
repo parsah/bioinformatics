@@ -6,3 +6,4 @@
 *.txt
 *.xml
 *.pyc
+.DS_Store
