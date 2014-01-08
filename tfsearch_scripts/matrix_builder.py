@@ -5,6 +5,7 @@ and classification purposes.
 '''
 
 import argparse
+import copy
 
 ENTRY_QUALIFIER = '::' # valid tfSearch outputs contain the '::' string
 
@@ -74,8 +75,42 @@ def unique_pwms(control, query):
             union.update(pwms)
     return union
 
-def build_matrix(control, query):
-    pass
+def debug_matrix(m):
+    for row in range(len(m)):
+        for col in range(len(m[row])):
+            print(m[row][col], ' ', end='')
+        print()
+
+def build_matrix(control, query, bool_array):
+    ''' 
+    The matrix is such that you have n rows. Each row is a sequence from both
+    the control and query datasets. Each PWM column, j, references a list of 
+    counts of length n. Thus, the index [ i , j ] can be used to retrieve the
+    PWM-count in a given sequence.
+    @param control: Parsed control input file.
+    @param query: Parsed query input file.
+    @param bool_array: Array referencing which dataset is control or not
+    '''
+    all_pwms = {pwm: 0 for pwm in unique_pwms(control, query)} # PWMs will serve as matrix columns
+    #num_rows = len(control) + len(query) # references the total number of rows
+    rownum = 0 # serves as the row-counter
+    header = ['Sequence', '\t'.join(list(all_pwms.keys())), 'Target']
+    print('\t'.join(header)) # display header; first line
+    
+    for i, dataset in enumerate([control, query]):        
+        for accn in dataset: # for each accession in dataset...
+            counts = copy.deepcopy(all_pwms) # create PWM copy; for saving counts to 
+            pwms = dataset[accn] # ... get all accession-specific PWMs.
+            print(accn, end='') ### references 'Sequence' column ###
+            for pwm in pwms: # iterate over PWM collection, set PWM count
+                num = pwms[pwm]
+                counts[pwm] = num # set the PWM-specific count
+            
+            print('\t' + '\t'.join([str(i) for i in 
+                             list(counts.values())]), end='') ### references PWM counts ###
+            print('\t' + str(int(bool_array[i])))
+            rownum += 1
+    
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -87,7 +122,7 @@ if __name__ == '__main__':
     try:
         control = parse(f = args['control'])
         query = parse(f = args['query'])
-        build_matrix(control, query)
+        build_matrix(control, query, [False, True])
         
     except KeyboardInterrupt:
         print()
