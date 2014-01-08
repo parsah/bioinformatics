@@ -33,9 +33,7 @@ def run_script(f, p):
     @param f: Input FASTA file.
     @param p: Input TRANSFAC PWMs file.
     '''
-    records = SeqIO.consolidate(f, 'fasta')
-    print('Processing:', f)
-
+    records = SeqIO.parse(f, 'fasta')
     for record in records: # iterate through each FASTA entry
         print('*** RUNNING ', record.id, '***')
         temp_file = tempfile.NamedTemporaryFile(delete=True, mode='w') # create temp file
