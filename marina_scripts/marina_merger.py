@@ -14,7 +14,7 @@ class Merger():
         
     def union(self):
         for rf in self.resultfiles:
-            rf.parse()
+            rf.consolidate()
             self.tfbs_set.update(set(list(rf.set_tfbs.keys())))
             
     def merge(self):
@@ -34,7 +34,7 @@ class ResultFile():
         self.fname = fname
         self.set_tfbs = {} # key => TFBS, value => IPF score (column 1)
     
-    def parse(self):
+    def consolidate(self):
         handle = open(self.fname)
         for linenum, line in enumerate(handle):
             line = line.strip().split('\t')
