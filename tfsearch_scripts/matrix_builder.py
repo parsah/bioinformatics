@@ -5,7 +5,8 @@ and classification purposes.
 '''
 
 import argparse
-import copy
+import pandas as pd
+from collections import OrderedDict
 
 ENTRY_QUALIFIER = '::' # valid tfSearch outputs contain the '::' string
 
@@ -75,11 +76,9 @@ def unique_pwms(control, query):
             union.update(pwms)
     return union
 
-def debug_matrix(m):
-    for row in range(len(m)):
-        for col in range(len(m[row])):
-            print(m[row][col], ' ', end='')
-        print()
+def write_matrix(m, f):
+    df = pd.DataFrame(m)
+    df.to_csv(f)
 
 def build_matrix(control, query, bool_array):
     ''' 
@@ -91,39 +90,40 @@ def build_matrix(control, query, bool_array):
     @param query: Parsed query input file.
     @param bool_array: Array referencing which dataset is control or not
     '''
-    all_pwms = {pwm: 0 for pwm in unique_pwms(control, query)} # PWMs will serve as matrix columns
-    #num_rows = len(control) + len(query) # references the total number of rows
-    rownum = 0 # serves as the row-counter
-    header = ['Sequence', '\t'.join(list(all_pwms.keys())), 'Target']
-    print('\t'.join(header)) # display header; first line
-    
-    for i, dataset in enumerate([control, query]):        
-        for accn in dataset: # for each accession in dataset...
-            counts = copy.deepcopy(all_pwms) # create PWM copy; for saving counts to 
-            pwms = dataset[accn] # ... get all accession-specific PWMs.
-            print(accn, end='') ### references 'Sequence' column ###
-            for pwm in pwms: # iterate over PWM collection, set PWM count
-                num = pwms[pwm]
-                counts[pwm] = num # set the PWM-specific count
-            
-            print('\t' + '\t'.join([str(i) for i in 
-                             list(counts.values())]), end='') ### references PWM counts ###
-            print('\t' + str(int(bool_array[i])))
-            rownum += 1
-    
-    
+    name_seq, name_target = 'Sequence', 'Target'
+    num_rows = len(control) + len(query) # references the total number of sequences    
+    m = OrderedDict({ name_seq: [''] * num_rows }) # references strings  
+    m.update({ pwm: [0] * num_rows for pwm in  unique_pwms(control, query )}) # PWMs are our matrix columns
+    m.update({ name_target: ['None'] * num_rows })
+
+    row_num = 0 # begin row counter
+    for i, dataset in enumerate([control, query]):
+        for accn in dataset:
+            print(accn, row_num)
+            m[name_seq][row_num] = accn # set accession name
+            m[name_target][row_num] = int(bool_array[i]) # set target variable
+            pwms = dataset[accn] # get PWMs mapping to the accession 
+            for pwm in pwms:
+                count = pwms[pwm] # get the PWM count as well
+                m[pwm][row_num] = count
+                print('\t', accn, pwm, count)
+            row_num += 1
+    return m
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-control', metavar='FILE', required=True,
                         help='tfSearch output; control file [req]')
     parser.add_argument('-query', metavar='FILE', required=True,
                         help='tfSearch output; query file [req]')
+    parser.add_argument('-out', metavar='FILE', required=False,
+                        default='./out.csv',
+                        help='Output matrix file [out.csv]')
     args = vars(parser.parse_args())
     try:
         control = parse(f = args['control'])
         query = parse(f = args['query'])
-        build_matrix(control, query, [False, True])
-        
+        m = build_matrix(control, query, [False, True])
+        write_matrix(m, args['out']) 
     except KeyboardInterrupt:
         print()
-    
