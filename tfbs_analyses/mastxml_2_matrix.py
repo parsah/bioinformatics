@@ -1,3 +1,12 @@
+''' 
+Given two MAST XML output files (control and query), this script
+parses both these outputs and represents their contents as a 
+count matrix. This data-structure is made of i * j rows and
+columns whereby each row is an input sequence with at least one
+mapped PWM. Each column is a PWM that was mapped onto sequences
+using MAST.
+'''
+
 import argparse
 import random
 import pandas
