@@ -112,7 +112,7 @@ def run_selector():
         hits = counter.count_gc() # get all the matching segments for the BED entry.
         
         # write results; only one hit is randomly chosen.
-        print('>matched.'+chrom+'.'+str(start)+'.'+str(end) + '\n' +random.choice(hits) + '\n')
+        print('>matched.'+chrom+'.'+str(start)+'.'+str(end) + '\n' +random.choice(hits))
 
 if __name__ == '__main__':
     try:

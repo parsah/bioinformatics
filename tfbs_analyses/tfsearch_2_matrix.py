@@ -10,26 +10,12 @@ from collections import OrderedDict
 
 ENTRY_QUALIFIER = '::' # valid tfSearch outputs contain the '::' string
 
-class TFSearchOutputWrapper():
-    def __init__(self, is_control):
-        self._is_control = is_control
-        self._pwms = {} # key => PWM, value => count
-        self._accns = set()
-        
-    def get_pwms(self):
-        return self._pwms
-    
-    def get_accessions(self):
-        return self._accns
-    
-    def add_pwm(self, k, v):
-        self._pwms[k] = v
-        
-    def add_accession(self, accn):
-        self._accns.add(accn)
-        
-    def debug(self):
-        print(len(self.get_accessions()), 'accessions;', len(self.get_pwms()), 'pwms')
+def normalize(m):
+    ''' 
+    Length-normalize each entry in the count matrix.
+    @param m: Count matrix.
+    '''
+    pass
 
 def get_count(s):
     ''' 
@@ -99,14 +85,14 @@ def build_matrix(control, query, bool_array):
     row_num = 0 # begin row counter
     for i, dataset in enumerate([control, query]):
         for accn in dataset:
-            print(accn, row_num)
+            #print(accn, row_num)
             m[name_seq][row_num] = accn # set accession name
             m[name_target][row_num] = int(bool_array[i]) # set target variable
             pwms = dataset[accn] # get PWMs mapping to the accession 
             for pwm in pwms:
                 count = pwms[pwm] # get the PWM count as well
                 m[pwm][row_num] = count
-                print('\t', accn, pwm, count)
+                #print('\t', accn, pwm, count)
             row_num += 1
     return m
 
@@ -119,11 +105,16 @@ if __name__ == '__main__':
     parser.add_argument('-out', metavar='FILE', required=False,
                         default='./out.csv',
                         help='Output matrix file [out.csv]')
+    parser.add_argument('--norm', action='store_true', 
+                        help='Length-normalize PWM counts [true]')
     args = vars(parser.parse_args())
+    
     try:
         control = parse(f = args['control'])
         query = parse(f = args['query'])
         m = build_matrix(control, query, [False, True])
+        if args['norm']:
+            pass
         write_matrix(m, args['out']) 
     except KeyboardInterrupt:
         print()

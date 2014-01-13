@@ -22,7 +22,7 @@ def _exec_tfsearch(f, p):
         results = '' # results-string
         record = SeqIO.read(f, 'fasta')
         for line in lines:
-            results += record.id + ' ' + line.decode('utf-8') + '\n'
+            results += record.id + ' ' + str(len(record.seq)) + ' ' + line.decode('utf-8') + '\n'
         return results.strip()
     else:
         raise IOError('Error thrown during running of tfSearch [error]')
