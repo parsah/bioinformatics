@@ -79,6 +79,7 @@ def build_matrix(tree_cont, tree_query):
             m['Target'][row_num] = data_num # either 0 or 1
             m['Sequence'][row_num] = seq_name # set sequence accession
             row_num += 1 # increment row counter
+    return m
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
@@ -86,6 +87,9 @@ if __name__ == '__main__':
                    help='MAST output XML control file [req]')
     p.add_argument('-query', metavar='XML', required=True,
                    help='MAST output XML query file [req]')
+    p.add_argument('-csv', metavar='FILE', required=False, 
+                   default='out.csv',
+                   help='Output file [out.csv]')
     args = vars(p.parse_args())
     
     # parse both XML files.
@@ -94,3 +98,5 @@ if __name__ == '__main__':
     
     # begin mapping PWM counts to their respective sequence
     m = build_matrix(tree_cont, tree_query)
+    to_file(m=m, f=args['csv']) # lastly, save results
+    print('Program successful [OK]')
