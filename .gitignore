@@ -3,7 +3,6 @@
 .pydevproject
 *.fasta
 *.fa
-*.txt
 *.xml
 *.pyc
 .DS_Store
