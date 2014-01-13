@@ -15,7 +15,14 @@ def normalize(m):
     Length-normalize each entry in the count matrix.
     @param m: Count matrix.
     '''
-    pass
+    colnames = list(m.keys())
+    invalid_cols = ['Sequence', 'Length', 'Target']
+    for col in colnames:
+        if col not in invalid_cols:
+            col_data = m[col]
+            for rownum, count in enumerate(col_data):
+                length = m['Length'][rownum]
+                m[col][rownum] = count / float(length)
 
 def get_count(s):
     ''' 
@@ -39,10 +46,10 @@ def parse(f):
         if ENTRY_QUALIFIER in i: # only print line if valid entry
             num = get_count(i)
             i = i.split(' ')
-            # idx 2 => PWM ID, idx 3 => PWM name; remove trailing comma
-            accn, pwm = i[0], i[2] + ' ' + i[3][:-1]
+            # idx 3 => PWM ID, idx 4 => PWM name; remove trailing comma
+            accn, length, pwm = i[0], int(i[1]), i[3] + ' ' + i[4][:-1]
             if accn not in d:
-                d[accn] = {pwm: 0}
+                d[accn] = {pwm: 0, 'Length': length} # set the accession length
             d[accn][pwm] = num
     return d
 
@@ -66,7 +73,7 @@ def write_matrix(m, f):
     df = pd.DataFrame(m)
     df.to_csv(f)
 
-def build_matrix(control, query, bool_array):
+def build_matrix(control, query):
     ''' 
     The matrix is such that you have n rows. Each row is a sequence from both
     the control and query datasets. Each PWM column, j, references a list of 
@@ -74,20 +81,19 @@ def build_matrix(control, query, bool_array):
     PWM-count in a given sequence.
     @param control: Parsed control input file.
     @param query: Parsed query input file.
-    @param bool_array: Array referencing which dataset is control or not
     '''
-    name_seq, name_target = 'Sequence', 'Target'
+    colname_seq, colname_target = 'Sequence' ,'Target'
     num_rows = len(control) + len(query) # references the total number of sequences    
-    m = OrderedDict({ name_seq: [''] * num_rows }) # references strings  
+    m = OrderedDict({ colname_seq: [''] * num_rows }) # references strings  
     m.update({ pwm: [0] * num_rows for pwm in  unique_pwms(control, query )}) # PWMs are our matrix columns
-    m.update({ name_target: ['None'] * num_rows })
+    m.update({ colname_target: ['None'] * num_rows })
 
     row_num = 0 # begin row counter
     for i, dataset in enumerate([control, query]):
         for accn in dataset:
             #print(accn, row_num)
-            m[name_seq][row_num] = accn # set accession name
-            m[name_target][row_num] = int(bool_array[i]) # set target variable
+            m[colname_seq][row_num] = accn # set accession name
+            m[colname_target][row_num] = i # set target variable
             pwms = dataset[accn] # get PWMs mapping to the accession 
             for pwm in pwms:
                 count = pwms[pwm] # get the PWM count as well
@@ -112,9 +118,9 @@ if __name__ == '__main__':
     try:
         control = parse(f = args['control'])
         query = parse(f = args['query'])
-        m = build_matrix(control, query, [False, True])
+        m = build_matrix(control, query)
         if args['norm']:
-            pass
+            normalize(m) # performing length normalization
         write_matrix(m, args['out']) 
     except KeyboardInterrupt:
         print()
