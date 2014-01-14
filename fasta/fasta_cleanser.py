@@ -1,5 +1,6 @@
 '''
-Script which removes FASTA entries with user-provided invalid characters.
+FASTA filter script. Non-ATGCN bases are by-default filtered. The --mask
+option replaces such bases with an N so that the sequence is kept.
 '''
 
 import argparse
@@ -27,11 +28,7 @@ def run(fname, is_filter):
             display_seq(header = i.description, seq = corrected_seq)
 
 if __name__ == '__main__':
-    d = """
-    FASTA filter script. Non-ATGCN bases are by-default filtered. The --mask
-    option replaces such bases with an N so that the sequence is kept.
-    """
-    parser = argparse.ArgumentParser(description=d)
+    parser = argparse.ArgumentParser()
     parser.add_argument('-i', required=True, metavar='FASTA',
                         help='FASTA file [na]')
     parser.add_argument('--mask', action='store_const', const=True,

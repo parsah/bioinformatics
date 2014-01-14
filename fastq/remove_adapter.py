@@ -1,12 +1,18 @@
+'''
+Helpful script for removing a leading adapter from a FASTQ file.
+Such functionality is critical in instances where multiplex sequencing
+protocols are utilized.
+'''
+
 import argparse
 from Bio import SeqIO
 
-'''
-Trivial script to remove a leading adapter from a FASTQ file.
-'''
-
 def remove_adapter(fastq, adapter):
-    # Parse FASTQ and remove all adapter instances and respective quality.
+    ''' 
+    Parse FASTQ and remove all adapter instances and respective quality.
+    @param fastq: FASTQ filename.
+    @param adapter: Adapter to remove of-type string.
+    '''
     records = SeqIO.consolidate(fastq, 'fastq')
     for entry in records:
         seq = str(entry.seq)
