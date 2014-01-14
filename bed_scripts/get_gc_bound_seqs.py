@@ -71,7 +71,7 @@ class GCCounter():
                 break
         return hits
 
-def run_selector():
+def run():
     ''' 
     Executes the main algorithm that takes a BED entry and extracts a 
     corresponding genomic sequence which matches its GC and repeat content.
@@ -86,10 +86,8 @@ def run_selector():
             #print('added', record.description, len(record.seq))
     
     for bed_line in open(BED_FILE):
-        bed_line = bed_line.strip().split('\t')
-        # parse the BED entry.
+        bed_line = bed_line.strip().split('\t') # parse BED entry
         chrom, start, end = bed_line[0], int(bed_line[1]), int(bed_line[2])
-        #print('\nAnalyzing BED entry:', chrom, start, end)
         
         # pull-out the sequence referencing the the BED chromosome.
         record = fasta_entries[chrom]
@@ -101,8 +99,6 @@ def run_selector():
         rand_chrom_name = random.choice(keys)
         
         gc_perc = round(GC(bed_sequence), 2)
-        #print('=> BED GC %:', gc_perc, '; querying', rand_chrom_name, '...')
-        #print(keys)
         rand_chrom_record = fasta_entries[rand_chrom_name]
         
         # perform GC-counting operations.
@@ -116,7 +112,10 @@ def run_selector():
 
 if __name__ == '__main__':
     try:
-        run_selector()
+        if len(sys.argv) < 2:
+            raise OSError('Provide BED file and genome folder, respectively [error].')
+        else:
+            run()
     except IOError as e:
         print(e)
     except KeyboardInterrupt:

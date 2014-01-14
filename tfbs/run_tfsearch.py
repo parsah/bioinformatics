@@ -4,9 +4,9 @@ Each FASTA entry in the user-provided file is therefore executed against
 a user-provided PWM file using the tfSearch application.
 '''
 
-import sys
 import subprocess
 import tempfile
+import argparse
 from Bio import SeqIO
 
 def _exec_tfsearch(f, p):
@@ -27,7 +27,7 @@ def _exec_tfsearch(f, p):
     else:
         raise IOError('Error thrown during running of tfSearch [error]')
 
-def run_script(f, p):
+def run_tfsearch(f, p):
     ''' 
     Runs tfSearch given a FASTA file and set of PWMs
     @param f: Input FASTA file.
@@ -46,14 +46,14 @@ def run_script(f, p):
 
 if __name__ == '__main__':
     try:
-        if len(sys.argv) < 2:
-            raise OSError('Input FASTA and TRANSFAC PWMs are required [error]')
-        else:
-            fasta = sys.argv[1] # user-provided input FASTA file
-            pwms = sys.argv[2] # user-provided input PWMs (TRANSFAC format)
-            run_script(fasta, pwms) # run the program
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-fasta', required=True, metavar='FASTA',
+                            help='Input FASTA file [req]')
+        parser.add_argument('-pwms', required=True, metavar='FILE',
+                            help='File containing PWMs [req]')
+        args = vars(parser.parse_args())
+        run_tfsearch(f = args['fasta'], p = args['pwms']) # run the program
     except OSError as e:
         print(e)
     except KeyboardInterrupt as e:
         print()
-

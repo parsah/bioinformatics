@@ -12,7 +12,7 @@ from Bio import SeqIO # for reading FASTA files.
 BED_FILE = sys.argv[1] # first argument
 GENOME_DIR = sys.argv[2] # folder containing FASTA sequences
 
-def run_selector():
+def run():
     ''' 
     Executes the main algorithm that takes a BED entry and extracts a 
     corresponding genomic sequence which matches its GC and repeat content.
@@ -45,7 +45,10 @@ def run_selector():
 
 if __name__ == '__main__':
     try:
-        run_selector()
+        if len(sys.argv) < 2:
+            raise OSError('Provide BED file and genome folder, respectively [error].')
+        else:
+            run()
     except IOError as e:
         print(e)
     except KeyboardInterrupt:
