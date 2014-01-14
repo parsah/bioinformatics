@@ -41,9 +41,9 @@ def populate(df, cont, query):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-control', required=True, metavar='FILE',
-                        help='Control output from FIMO --text mode [req]')
+                        help='FIMO --text mode output; control [req]')
     parser.add_argument('-query', required=True, metavar='FILE',
-                        help='Query output from FIMO --text mode [req]')
+                        help='FIMO --text mode output; query [req]')
     parser.add_argument('-csv', metavar='FILE', default='./out.csv',
                         help='Output file [./out.csv]')
     args = vars(parser.parse_args())
