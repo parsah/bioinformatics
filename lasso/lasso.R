@@ -31,6 +31,40 @@ buildLASSOClassifier <- function(x, y) {
   return(fit.cv)
 }
 
+getRatios <- function(x, y) {
+  # Derives count-ratios per attribute within the count matrix. Resultant 
+  # ratios capture attribute abundance within the target vector and serve
+  # to shed light on attribute over-representation.
+  # Args:
+  #   x: Count matrix of dimensions i * j
+  #   y: Target vector of dimensions i * 1
+  #
+  # Returns:
+  #   m: Matrix containing attribute ratios and count enumerations.
+  
+  cols <- colnames(x)
+  m <- matrix(nrow=dim(x)[2], ncol=3) # columns: ratio, #/query, #/control
+  for (i in 1: length(cols)) {
+    col.data <- x[, i] # get matrix data for respective column
+    num.query <- 0
+    num.control <- 0
+    for (j in 1: length(col.data)) {
+      if (y[j] == 1) { # if data-point target is 1, increment num.query
+        num.query <- num.query + col.data[j]
+      }
+      else {
+        num.control <- num.control + col.data[j] # increment control
+      }
+    }
+    ratio <- round(num.query / num.control, 4) # derive ratio
+    m[i, ] <- c(ratio, num.query, num.control) # add results to matrix
+  }
+  colnames(m) <- c('Ratio', 'Num.Query', 'Num.Control')
+  rownames(m) <- cols # set matrix columns
+  m <- m[order(m[, 1]), ] # sort the columns by their ratio
+  return(m)
+}
+
 getWeights <- function(fit.cv) {
   # Yields attribute weights (coefficients) given LASSO classifier.
   # Args:
