@@ -3,11 +3,12 @@ library("glmnet")
 parseCSV <- function(f) {
   # Parses a user-provided CSV file that is representative of a 
   # count matrix and returns its target vector and counts.
+  #
   # Args:
   #   f: Input CSV file.
   #
   # Returns:
-  #   list of x (matrix) and y (vector) given the input CSV file.
+  #   count-matrix target vector.
   
   df <- read.csv(file=f, header=T) # read matrix
   y <- as.matrix(df$Target) # extract target vector
@@ -24,12 +25,14 @@ parseCSV <- function(f) {
 
 buildLASSOClassifier <- function(x, y, nfold=3) {
   # Builds a LASSO classifier given a data matrix and target vector.
+  #
   # Args:
-  #   x: Count matrix of dimensions i * j
-  #   y: Target vector of dimensions i * 1
+  #   x: Count matrix of dimensions i * j.
+  #   y: Target vector of dimensions i * 1.
   #   nfold: Number of cross-validation (CV) folds; default = 3.
+  #
   # Returns:
-  #   fit.cv: LASSO classifier.
+  #   LASSO classifier.
   
   stopifnot(length(table(y)) == 2) # y vector must have 0 or 1 values only 
   fit.cv <- cv.glmnet(x, y, nfolds=nfold, type.measure='auc', family='binomial')
@@ -40,12 +43,13 @@ getRatios <- function(x, y) {
   # Derives count-ratios per attribute within the count matrix. Resultant 
   # ratios capture attribute abundance within the target vector and serve
   # to shed light on attribute over-representation.
+  #
   # Args:
   #   x: Count matrix of dimensions i * j
   #   y: Target vector of dimensions i * 1
   #
   # Returns:
-  #   m: Matrix containing attribute ratios and count enumerations.
+  #   Matrix containing attribute ratios and count enumerations.
   
   stopifnot(length(table(y)) == 2) # y vector must have 0 or 1 values only 
   cols <- colnames(x)
@@ -71,15 +75,20 @@ getRatios <- function(x, y) {
   return(m)
 }
 
-homogenize <- function(x, y, iter=1, nfold=5, threshold=0.5) {
-  # Homogenization of the count-matrix and corresponding target vector
-  # (see Marlikar et. al., Genome Research, 2010) facilitates iterative 
-  # n-fold cross-validation and derivation of an AUC per iteration.
+toPredictionVector <- function(x, y, iter=1, nfold=5) {
+  # A prediction matrix is the result of iteratively (and randomly) building 
+  # classifiers and deriving predictions of each observation.
+  # Upon completion, each observation references predictions derived per
+  # iteration, useful in possible dimensionality reduction.
+  #
   # Args:
-  #   x: Count matrix of dimensions i * j
-  #   y: Target vector of dimensions i * 1
-  #   iter: Number of iterations to perform
-  #   nfold: Number of cross-validations to perform
+  #   x: Count matrix of dimensions i * j.
+  #   y: Target vector of dimensions i * 1.
+  #   iter: Number of iterations to perform.
+  #   nfold: Number of cross-validations to perform.
+  #
+  # Returns:
+  #   Vector of predictions of dimensions i * 1. 
   
   stopifnot(length(table(y)) == 2) # y vector must have 0 or 1 values only 
   matrix.control <- x[which(y == 0), ]
@@ -88,26 +97,51 @@ homogenize <- function(x, y, iter=1, nfold=5, threshold=0.5) {
   all.preds <- matrix(nrow=nrow(x), ncol=iter) # create matrix of all LASSO predictions
   rownames(all.preds) <- rownames(x) # save row names
   
-  for (i in 1: iter) {
-    # extract testing, training data from the shuffled control matrix
-    #split.control <- splitMatrix(matrix.control, perc.train)
-    #split.query <- splitMatrix(matrix.query, perc.train)
-    
+  for (i in 1: iter) {    
     query.train <-   matrix.query[sample.int(nrow(matrix.query), size=floor(nrow(matrix.query) * perc.train)), ]
     control.train <- matrix.control[sample.int(nrow(matrix.control), size=floor(nrow(matrix.control) * perc.train)), ]
     sample.x <- rbind(query.train, control.train) # join two matrices
     sample.y <- as.matrix(c(rep(1, nrow(query.train)),  
                             rep(0, nrow(control.train)))) # add target vector
-    cat("[ Iteration ", i, '/', iter, ' ] ... building classifier.\n')
+    cat("[ Iteration ", i, '/', iter, ' ] \n')
     sample.fit.cv <- buildLASSOClassifier(x=sample.x, y=sample.y, nfold=nfold)
-    preds <- predict(sample.fit.cv, x, type='response', s=c('lambda.min')) # derive predictions
-    all.preds[, i] <- preds # save predictions produced from iteration to column i
+    iter.preds <- predict(sample.fit.cv, x, type='response', s=c('lambda.min')) # derive predictions
+    all.preds[, i] <- iter.preds # save predictions produced from iteration to column i
   }
-  all.preds <- all.preds >= threshold # assign boolean for each iteration's prediction
-  seq.results <- rowSums(all.preds) / iter # enumerate all predictions using probability
-  only.true.preds <- seq.results >= threshold # determine if the predictions passed threshold
-  indices.true.preds <- which(only.true.preds == TRUE) # get indices of valid predictions
-  return(list('x'=x[indices.true.preds, ], 'y'=y[indices.true.preds])) # return valid data-points
+  all.preds <- rowSums(all.preds) / iter # average predictions for each observation
+  return(all.preds) # return observation-specific predictions
+}
+
+homogenize <- function(x, y, preds, threshold = 0.5) {
+  # Given a count matrix and a target vector, each row is enumerated against 
+  # to determine if its predictions cumulatively exceed a user-provided threshold.
+  # In order for query points to exceed, their cumulative prediction must exceed the
+  # threshold. On the other hand, control points must be less than the threshold.
+  # Implementation is based on Narlikar et. al., Genome Research, 2010.
+  #
+  # Args:
+  #   x: Count matrix of dimensions i * j
+  #   y: Target vector of dimensions i * 1
+  #   preds:  Matrix of observation predictions of dimensions i * k
+  #   threshold: prediction cutoff.
+  #
+  # Returns:
+  #   List referencing homogenized count matrix and target vector.
+  
+  control.counts <- x[which(y == 0), ] # get matrix representing control and query data
+  query.counts <- x[which(y == 1), ]
+  control.preds <- preds[which(y == 0)] < threshold # get predictions
+  query.preds <- preds[which(y == 1)] >= threshold
+  
+  idx.control.preds <- which(control.preds == T) # get indices of valid predictions
+  idx.query.preds <- which(query.preds == T)
+  new.control.counts <- control.counts[idx.control.preds, ]
+  new.query.counts <- query.counts[idx.query.preds, ]
+  
+  new.x <- rbind(new.query.counts, new.control.counts) # merge counts into new matrix
+  new.y <- as.matrix(c(rep(1, nrow(new.query.counts)), # build target vector
+                       rep(0, nrow(new.control.counts))))
+  return(list('x'=new.x, 'y'=new.y))
 }
 
 splitMatrix <- function(x, perc) {
