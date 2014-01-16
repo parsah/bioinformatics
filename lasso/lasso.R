@@ -1,4 +1,5 @@
 library("glmnet")
+library("plyr")
 
 parseCSV <- function(f) {
   # Parses a user-provided CSV file that is representative of a 
@@ -86,6 +87,7 @@ getPValues <- function(x, y, adj.method="none") {
     p.vals[i, 1] <- fisher.test(m)$p.value # save p-value
   }
   p.vals[, 1] <- p.adjust(p.vals, method=adj.method) # adjust p-values
+  colnames(p.vals) <- c('P.value')
   return(p.vals)
 }
 
@@ -111,19 +113,49 @@ toPredictionVector <- function(x, y, iter=1, nfold=5) {
   all.preds <- matrix(nrow=nrow(x), ncol=iter) # create matrix of all LASSO predictions
   rownames(all.preds) <- rownames(x) # save row names
   
-  for (i in 1: iter) {    
+  for (i in 1: iter) {
+    time.start <- Sys.time() # get start time
     query.train <-   matrix.query[sample.int(nrow(matrix.query), size=floor(nrow(matrix.query) * perc.train)), ]
     control.train <- matrix.control[sample.int(nrow(matrix.control), size=floor(nrow(matrix.control) * perc.train)), ]
     sample.x <- rbind(query.train, control.train) # join two matrices
     sample.y <- as.matrix(c(rep(1, nrow(query.train)),  
                             rep(0, nrow(control.train)))) # add target vector
-    cat("[ Iteration ", i, '/', iter, ' ] \n')
+    cat("[ Iteration ", i, '/', iter, ' ] ... ')
     sample.fit.cv <- buildLASSOClassifier(x=sample.x, y=sample.y, nfold=nfold)
     iter.preds <- predict(sample.fit.cv, x, type='response', s=c('lambda.min')) # derive predictions
     all.preds[, i] <- iter.preds # save predictions produced from iteration to column i
+    
+    time.iter <- format(.POSIXct(difftime(Sys.time(), time.start, units=c("secs")),tz="GMT"), "%H:%M:%S")
+    cat(time.iter, 'h:m:s \n') # print on existing line.
   }
   all.preds <- rowSums(all.preds) / iter # average predictions for each observation
   return(all.preds) # return observation-specific predictions
+}
+
+generateReport <- function(fit.cv, ratios, p.vals, out='./report.csv') {
+  # Generates a report given a LASSO fit, PWM ratios, and their p-values.
+  #
+  # Args:
+  #   fit.cv: LASSO cross-validated (CV) classifier.
+  #   ratios: Matrix of ratios given count matrix and target vector.
+  #   p.vals: Collection of p-values.
+  #   out: Output file to save results to.
+  #
+  # Returns:
+  #   Output results file defined by the out argument.
+  
+  df.weights <- as.data.frame(getWeights(fit.cv))
+  df.ratios <- as.data.frame(ratios)
+  df.pvals <- as.data.frame(p.vals)
+  
+  dflist <- list(df.weights, df.ratios, df.pvals)
+  for (i in 1: length(dflist)) { # add a dummpy 'Seq' attribute to enable merging
+    dflist[[i]]$Seq <- rownames(dflist[[i]])
+  }
+  
+  merged <- join_all(dfs=dflist, match='first', by='Seq') # merge data and save to file
+  rownames(merged) <- NULL # remove rownames; already present
+  write.csv(merged, out) # write merged martix to a file
 }
 
 homogenize <- function(x, y, preds, threshold = 0.5) {
@@ -186,8 +218,8 @@ getWeights <- function(fit.cv) {
   #   weights: Dataframe of attributes and their respective weights.
 
   m <- as.matrix(coef(fit.cv))
-  df <- data.frame('PWM' = rownames(m), 'Weight' = m[, 1])
-  rownames(df) <- NULL
+  df <- data.frame('Weight' = m[, 1])
+  rownames(df) <- rownames(m)
   return(df)
 }
 
