@@ -52,27 +52,41 @@ getRatios <- function(x, y) {
   #   Matrix containing attribute ratios and count enumerations.
   
   stopifnot(length(table(y)) == 2) # y vector must have 0 or 1 values only 
-  cols <- colnames(x)
-  m <- matrix(nrow=dim(x)[2], ncol=3) # columns: ratio, #/query, #/control
-  for (i in 1: length(cols)) {
-    col.data <- x[, i] # get matrix data for respective column
-    num.query <- 0
-    num.control <- 0
-    for (j in 1: length(col.data)) {
-      if (y[j] == 1) { # if data-point target is 1, increment num.query
-        num.query <- num.query + col.data[j]
-      }
-      else {
-        num.control <- num.control + col.data[j] # increment control
-      }
-    }
-    ratio <- round(num.query / num.control, 4) # derive ratio
-    m[i, ] <- c(ratio, num.query, num.control) # add results to matrix
-  }
+  sum.query <- colSums(x[which(y == 1), ]) # sum rows referencing query targets
+  sum.control <- colSums(x[which(y == 0), ]) # repeat for control
+  ratio <- round(sum.query / sum.control, 4) # derive ratio
+  m <- cbind(ratio, sum.query, sum.control) # gather results in matrix
   colnames(m) <- c('Ratio', 'Num.Query', 'Num.Control')
-  rownames(m) <- cols # set matrix columns
-  m <- m[order(m[, 1]), ] # sort the columns by their ratio
   return(m)
+}
+
+getPValues <- function(x, y, adj.method="none") {
+  # Derives adjusted p-values for each count matrix attribute based on 
+  # abundance of the observation.
+  #
+  # Args:
+  #   x: Count matrix of dimensions i * j
+  #   y: Target vector of dimensions i * 1
+  #   method: P-value adjustment method. See p.adjust(method,...)
+  #
+  # Returns:
+  #   P-value (adjusted) vector.
+  
+  ratios <- getRatios(x, y) # contains feature counts
+  total.query <- sum(ratios[, 2]) # sum query column
+  total.control <- sum(ratios[, 3]) # sum control column
+  p.vals <- matrix(ncol=1, nrow=nrow(ratios)) # for storing p-values
+  rownames(p.vals) <- rownames(ratios)
+
+  for (i in 1: nrow(ratios)) { # iteratively compute matrix p-value
+    val.query <- ratios[i, 2]
+    val.control <- ratios[i, 3]
+    m <- matrix(c(val.query, val.control, total.query-val.query, total.control-val.control),
+                ncol=2, byrow=T)
+    p.vals[i, 1] <- fisher.test(m)$p.value # save p-value
+  }
+  p.vals[, 1] <- p.adjust(p.vals, method=adj.method) # adjust p-values
+  return(p.vals)
 }
 
 toPredictionVector <- function(x, y, iter=1, nfold=5) {
@@ -115,7 +129,7 @@ toPredictionVector <- function(x, y, iter=1, nfold=5) {
 homogenize <- function(x, y, preds, threshold = 0.5) {
   # Given a count matrix and a target vector, each row is enumerated against 
   # to determine if its predictions cumulatively exceed a user-provided threshold.
-  # In order for query points to exceed, their cumulative prediction must exceed the
+  # For query data-points to exceed, their cumulative prediction must exceed the
   # threshold. On the other hand, control points must be less than the threshold.
   # Implementation is based on Narlikar et. al., Genome Research, 2010.
   #
@@ -172,7 +186,6 @@ getWeights <- function(fit.cv) {
   #   weights: Dataframe of attributes and their respective weights.
 
   m <- as.matrix(coef(fit.cv))
-  m <- as.matrix(m[order(m), ]) # sort counts by their weight
   df <- data.frame('PWM' = rownames(m), 'Weight' = m[, 1])
   rownames(df) <- NULL
   return(df)
