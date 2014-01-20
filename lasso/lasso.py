@@ -3,7 +3,7 @@ import sys
 
 COLNAME_TARGET = 'Target'
 COLNAME_SEQUENCE = 'Sequence'
-VERBOSE = False
+VERBOSE = False # whether output should be displayed or not. 
 
 try:
     import pandas
@@ -26,26 +26,44 @@ class LASSOClassifier():
 class ClassifiableCountDataset():
     def __init__(self):
         self.df = None
-        self.is_checked = False
     
-    def parse(self, f):
-        if VERBOSE:
-            print('Parsing input ...')
-        self.df = pandas.read_csv(f)
-        self.sanity_check()
+    def set_data(self, df):
+        assert isinstance(df, pandas.DataFrame)
+        self.df = df
     
-    def get_data(self):
+    def data(self):
         return self.df
     
-    def split_counts(self, nfold):
-        pass
-    
     def get_control(self):
-        pass
-    
+        ''' 
+        Extract data-frame regions that reference control rows.
+        @return: New DataFrame object.
+        '''
+        cdf = ClassifiableCountDataset()
+        cdf.set_data(self.data()[self.data()[COLNAME_TARGET] == 0])
+        return cdf
+        
     def get_query(self):
-        pass
+        ''' 
+        Extract data-frame regions that reference query rows.
+        @return: New DataFrame object.
+        '''
+        cdf = ClassifiableCountDataset()
+        cdf.set_data(self.data()[self.data()[COLNAME_TARGET] == 1])
+        return cdf
+
+class BinaryClassificationFile():
+    def __init__(self, f):
+        self.f = f
+        self.df = None
+        self.is_checked = False
     
+    def parse(self):
+        if VERBOSE:
+            print('Parsing input ...')
+        self.df = pandas.read_csv(self.f)
+        self.sanity_check()
+
     def sanity_check(self):
         ''' 
         Performs several tests to determine if the matrix is suitable
@@ -72,6 +90,21 @@ class ClassifiableCountDataset():
         
     def is_sanitized(self):
         return self.is_checked
+    
+    def get_data(self):
+        return self.df
+    
+#    def split_counts(self, nfold):
+#         pass
+    
+#     def get_shape(self):
+#         ''' 
+#         Return number of rows and columns within data-frame
+#         @return: list referencing number of rows and column.
+#         '''
+#         return self.df.shape
+        
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -86,8 +119,11 @@ if __name__ == '__main__':
     try:
         args = vars(parser.parse_args())
         VERBOSE = args['verbose']
-        dataset = ClassifiableCountDataset() # encapsulates input CSV
-        dataset.parse(f = args['file']) # parse input file
+        file = BinaryClassificationFile(f = args['file']) # encapsulates input CSV
+        file.parse() # parse input file
+        cdf = ClassifiableCountDataset()
+        cdf.set_data(file.get_data())
+        print(cdf.get_control())
         
     except IOError as e:
         print(e)
