@@ -162,7 +162,8 @@ homogenize <- function(x, y, preds, threshold = 0.5) {
   # Given a count matrix and a target vector, each row is enumerated against 
   # to determine if its predictions cumulatively exceed a user-provided threshold.
   # For query data-points to exceed, their cumulative prediction must exceed the
-  # threshold. On the other hand, control points must be less than the threshold.
+  # threshold. Query data-points not exceeding this threshold and removed along
+  # with their corresponding control.
   # Implementation is based on Narlikar et. al., Genome Research, 2010.
   #
   # Args:
@@ -176,17 +177,34 @@ homogenize <- function(x, y, preds, threshold = 0.5) {
   
   control.counts <- x[which(y == 0), ] # get matrix representing control and query data
   query.counts <- x[which(y == 1), ]
-  control.preds <- preds[which(y == 0)] < threshold # get predictions
-  query.preds <- preds[which(y == 1)] >= threshold
+  query.preds <- preds[which(y == 1)] #>= threshold # uninterested in control predictions.
   
-  idx.control.preds <- which(control.preds == T) # get indices of valid predictions
-  idx.query.preds <- which(query.preds == T)
-  new.control.counts <- control.counts[idx.control.preds, ]
-  new.query.counts <- query.counts[idx.query.preds, ]
+  # iterate over each query and check if it has a corresponding control; a
+  # test purely determined if the query substring is within the control.
+  new.query <- c() # create vector so rows can be added without matrix usage.
+  new.control <- c() 
+  names.query <-c() # references row-names as it is unknown which observations are/aren't valid.
+  names.control <- c()
+  rownames.control <- row.names(control.counts)
   
-  new.x <- rbind(new.query.counts, new.control.counts) # merge counts into new matrix
-  new.y <- as.matrix(c(rep(1, nrow(new.query.counts)), # build target vector
-                       rep(0, nrow(new.control.counts))))
+  for (i in 1: nrow(query.counts)) {
+    query.name <- row.names(query.counts)[i]
+    query.pred <- query.preds[i] # whether the query passes threshold
+    match.pos <- grep(query.name, rownames.control, fixed=T)
+
+    # if query prediction is true, add control and query data-points.
+    if (query.pred >= threshold) {
+      new.query <- rbind(new.query, query.counts[i, ]) # add passed queries.
+      new.control <- rbind(new.control, control.counts[match.pos, ]) # add its respective control.
+      names.control <- rbind(names.control, rownames.control[match.pos])
+      names.query <- rbind(names.query, query.name)
+    }
+  }
+  rownames(new.query) <- names.query # add row-names to each data-frame.
+  rownames(new.control) <- names.control
+  new.x <- rbind(new.query, new.control) # merge counts into new matrix
+  new.y <- as.matrix(c(rep(1, nrow(new.query)), # build target vector
+                       rep(0, nrow(new.control))))
   return(list('x'=new.x, 'y'=new.y))
 }
 
