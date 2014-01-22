@@ -7,3 +7,4 @@ brew doctor
 brew install git
 brew install homebrew/versions/gcc49
 brew install python3
+brew install aspell
