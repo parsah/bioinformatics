@@ -40,6 +40,42 @@ buildLASSOClassifier <- function(x, y, nfold=3) {
   return(fit.cv)
 }
 
+runNaiveClassifier <- function(f, out) {
+  # Provides an all-in-one function that performs classifier building and
+  # homogenization automatically. Classifiers are building using 10-fold
+  # cross-validation and 20 predictory iterations.
+  #
+  # Args:
+  #   f: Input CSV file.
+  #   out: Output file to save results to.
+  
+  n.folds <- 10 # by-default, have 10 cross-validation folds.
+  n.iter <- 20 # by-default, perform 20 predictive iterations.
+  thresh <- 0.5 # have default threshold of 0.5
+
+  # run functions given default scripts.
+  cat('Parsing CSV ...\n')
+  m <- parseCSV(f)
+  
+  cat('Building initial LASSO classifier, prediction matrix ...\n')
+  fit.original <- buildLASSOClassifier(m$x, m$y, nfold=n.folds)
+  preds <- toPredictionVector(m$x, m$y, nfold=n.folds, iter=n.iter)
+  
+  cat('Removing low-quality query-sequences ... \n')
+  h <- homogenize(m$x, m$y, preds, thresh)
+
+  cat('Building revised LASSO classifier ... \n')
+  fit.homogenized <- buildLASSOClassifier(h$x, h$y, nfold=n.folds)
+  auc.original <- getAUC(fit.original)
+  auc.homogenized <- getAUC(fit.homogenized)
+  cat('   AUC (initial):', auc.original, '\n')
+  cat('   AUC (homogenized):', auc.homogenized, '\n')
+
+  generateReport(fit.homogenized, getRatios(h$x, h$y), # lastly, save output
+      getPValues(h$x, h$y, 'BH'), out)
+  cat('[ Operations complete ] \n')
+}
+
 getRatios <- function(x, y) {
   # Derives count-ratios per attribute within the count matrix. Resultant 
   # ratios capture attribute abundance within the target vector and serve
