@@ -6,6 +6,9 @@ import argparse
 import pandas
 from collections import OrderedDict
 
+COLNAME_SEQ = 'Sequence'
+COLNAME_TARGET = 'Target'
+
 def build_skeleton(cont, query):
     pwms = set() # ordering is not important
     all_seqs = []
@@ -22,11 +25,21 @@ def build_skeleton(cont, query):
         all_seqs.extend(seqs)
     
     # wrap counts in a DataFrame
-    m = OrderedDict({'Sequence': all_seqs})
+    m = OrderedDict({COLNAME_SEQ: all_seqs})
     m.update({pwm: [0] * len(all_seqs) for pwm in pwms})
-    m.update({'Target': ['None'] * len(all_seqs)})
+    m.update({COLNAME_TARGET: ['None'] * len(all_seqs)})
     df = pandas.DataFrame(m, index=all_seqs)
     return df # return dataframe capturing the matrix
+
+def write(df, csv):
+    for i, seq in enumerate(df[COLNAME_SEQ]):
+        seq = df[COLNAME_SEQ][i] 
+        # replace unique delimiters so both control and query sequences
+        # share possible sub-sequences., i.e. match.chr1.111.553
+        # is related to chr1.111.553, and so on.
+        df[COLNAME_SEQ][i] = seq.replace(':', '.').replace('-', '.')
+    df.to_csv(csv)
+
 
 def populate(df, cont, query):
     for i, dataset in enumerate([cont, query]):
@@ -35,7 +48,7 @@ def populate(df, cont, query):
                 line = line.strip().split('\t')
                 pwm, seq = line[0: 2]
                 df[pwm][seq] += 1 # increment sequence-PWM count
-                df['Target'][seq] = i
+                df[COLNAME_TARGET][seq] = i
     return df # contains actual counts
 
 if __name__ == '__main__':
@@ -50,4 +63,4 @@ if __name__ == '__main__':
     cont_fname, query_fname = args['control'], args['query']
     df = build_skeleton(cont_fname, query_fname)
     df = populate(df, cont_fname, query_fname)
-    df.to_csv(args['csv'])
+    write(df, args['csv'])
