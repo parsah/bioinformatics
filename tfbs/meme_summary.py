@@ -9,6 +9,7 @@ feature-space during TFBS analysis.
 '''
 
 import argparse
+import math
 import numpy
 import re
 
@@ -35,19 +36,15 @@ class MEMEPWMRecord():
         assert m.shape[1] == 4 # assert 4 rows (A, T, G, C) are added
         self.matrix = m
     
-    def get_information(self):
-        pass
-
-class PWMContrastFactory():
-    def __init__(self, pwms):
-        assert isinstance(pwms, list) # assert list is provided
-        assert all([isinstance(p, MEMEPWMRecord) for p in pwms]) # must be PWM
-        self.pwms = pwms
-        
-    def run(self):
-        ''' 
-        Contrast PWMs in a pairwise manner; comparing their Shanon entropy.
-        '''
+    def information(self):
+        info = 0.0
+        for row in range(len(self.matrix)):
+            for col in range(len(self.matrix[row])):
+                cell = self.matrix[row][col] # reference matrix cell
+                if cell == 0:
+                    cell = 1e-4
+                info += cell * math.log(cell / 0.25)
+        return -info     
 
 class MEMEPWMParser():
     def __init__(self, f):
@@ -68,7 +65,7 @@ class MEMEPWMParser():
         # iterate over each motif and save into an array
         for i in hit_str:
             i = i.splitlines()
-            motif_id = i[0].strip()
+            motif_id = i[0].strip().split()[0]
             probs = i[1: ]
             matrix = []
             for row in probs:
@@ -76,7 +73,12 @@ class MEMEPWMParser():
             rec = MEMEPWMRecord(motif_id)
             rec.set_pwm(numpy.array(matrix)) # set the respective PWM
             self.records.append(rec)
-            
+    
+    def pretty_print(self):
+        print('PWM\tInformation_Content')
+        for i in self.get_records():
+            print(i.name + '\t' + str(i.information()))        
+    
     def get_records(self):
         return self.records        
     
@@ -87,6 +89,5 @@ if __name__ == '__main__':
     args = vars(parser.parse_args())
     meme_parser = MEMEPWMParser(f = args['i'])
     meme_parser.parse()
-    factory = PWMContrastFactory(pwms = meme_parser.get_records())
-    
+    meme_parser.pretty_print()
     
