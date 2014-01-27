@@ -49,7 +49,8 @@ class MEMEPWMRecord():
 class MEMEPWMParser():
     def __init__(self, f):
         self.f = f
-        self.records = []
+        self.records = {}
+        self.parse()
         
     def parse(self):
         entries = open(self.f)
@@ -72,22 +73,7 @@ class MEMEPWMParser():
                 matrix.append([float(x) for x in row.split()])
             rec = MEMEPWMRecord(motif_id)
             rec.set_pwm(numpy.array(matrix)) # set the respective PWM
-            self.records.append(rec)
-    
-    def pretty_print(self):
-        print('PWM\tInformation_Content')
-        for i in self.get_records():
-            print(i.name + '\t' + str(i.information()))        
+            self.records[rec.name] = rec.information()
     
     def get_records(self):
         return self.records        
-    
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-i',metavar='FILE', required=True,
-                        help='PWMs; MEME format [req]')
-    args = vars(parser.parse_args())
-    meme_parser = MEMEPWMParser(f = args['i'])
-    meme_parser.parse()
-    meme_parser.pretty_print()
-    
