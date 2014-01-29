@@ -63,10 +63,11 @@ class FIMOMatrixBuilder():
         @param filter_cont: Control FIMOFilter object.
         @param filter_query: Query FIMOFilter object. 
         '''
-        assert isinstance(filter_cont, FIMOFilter)
-        assert isinstance(filter_query, FIMOFilter)
-        self.filter_cont = filter_cont
-        self.filter_query = filter_query
+        if filter_cont and filter_query:
+            assert isinstance(filter_cont, FIMOFilter)
+            assert isinstance(filter_query, FIMOFilter)
+            self.filter_cont = filter_cont
+            self.filter_query = filter_query
     
     def write(self, csv):
         ''' 
