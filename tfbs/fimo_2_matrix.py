@@ -8,6 +8,9 @@ import pandas
 from pwm_info_content import MEMEPWMParser
 from collections import OrderedDict
 
+PROGRESS_CHAR = '*'
+PROGRESS_STEP = 5e4
+
 class FIMOMatrixBuilder():
     ''' 
     Constructs a count-matrix given a baseline and query FIMO
@@ -36,6 +39,7 @@ class FIMOMatrixBuilder():
         This resultant matrix is empty and is yet to be populated with
         actual count-data.
         '''
+        print('Building skeleton-matrix ', end='')
         pwms = set() # ordering is not important
         all_seqs = []
         
@@ -48,7 +52,10 @@ class FIMOMatrixBuilder():
                     pwm, seq = line[0: 2]
                     pwms.add(pwm)
                     seqs.add(seq)
+                if linenum % PROGRESS_STEP == 0:
+                    print(PROGRESS_CHAR, end='')
             all_seqs.extend(seqs)
+        print()
         
         # wrap counts in a DataFrame
         m = OrderedDict({FIMOMatrixBuilder.COLNAME_SEQ: all_seqs})
@@ -74,6 +81,7 @@ class FIMOMatrixBuilder():
         Writes the current count-matrix to a user-provided CSV file.
         @param csv: Output filename.
         '''
+        print('Saving output')
         for i, seq in enumerate(self.df[FIMOMatrixBuilder.COLNAME_SEQ]):
             seq = self.df[FIMOMatrixBuilder.COLNAME_SEQ][i] 
             # replace unique delimiters so both control and query sequences
@@ -88,6 +96,7 @@ class FIMOMatrixBuilder():
         ultimately build a functional object.
         '''
         assert self.df # data-frame must be valid
+        print('Populating matrix ', end='')
         for i, dataset in enumerate([self.control_frs.f, self.query_frs.f]):
             for linenum, line in enumerate(open(dataset)):
                 if linenum != 0:
@@ -95,6 +104,10 @@ class FIMOMatrixBuilder():
                     pwm, seq = line[0: 2]
                     self.df[pwm][seq] += 1 # increment sequence-PWM count
                     self.df[FIMOMatrixBuilder.COLNAME_TARGET][seq] = i
+                if linenum % PROGRESS_STEP == 0:
+                    print(PROGRESS_CHAR, end='')
+        print()
+                
         if self.filter_cont and self.filter_query: # if valid filters provided
             pwms_del = set(self.filter_cont.pwms_remove).union(self.filter_query.pwms_remove)
             self.df.drop(list(pwms_del), axis=1) # delete PWMs flagged for removal
@@ -210,6 +223,7 @@ class FIMOResultSet():
         to what sequences, and how many unique PWMs there are in the
         input file.
         '''
+        print('Parsing', self.f, '' ,end='')
         for num, line in enumerate(open(self.f)):
             line = line.strip().split()
             if num != 0:
@@ -219,7 +233,11 @@ class FIMOResultSet():
                 if motif_id not in self.mapping[seq]:
                     self.mapping[seq][motif_id] = set()
                 self.mapping[seq][motif_id].add(int(hit))
-                self.pwms.add(motif_id)
+                if motif_id not in self.pwms:
+                    self.pwms.add(motif_id)
+            if num % PROGRESS_STEP == 0:
+                print(PROGRESS_CHAR, end='')
+        print()
     
     def to_pwm_counts(self):
         ''' 
