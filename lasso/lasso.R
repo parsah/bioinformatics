@@ -62,7 +62,7 @@ runNaiveClassifier <- function(f, out) {
   preds <- toPredictionVector(m$x, m$y, nfold=n.folds, iter=n.iter)
   
   cat('Removing low-quality query-sequences ... \n')
-  h <- homogenize(m$x, m$y, preds, thresh)
+  h <- homogenize(m$x, m$y, preds$preds, thresh)
 
   cat('Building revised LASSO classifier ... \n')
   fit.homogenized <- buildLASSOClassifier(h$x, h$y, nfold=n.folds)
@@ -146,6 +146,7 @@ toPredictionVector <- function(x, y, iter=1, nfold=5) {
   matrix.control <- x[which(y == 0), ]
   matrix.query <- x[which(y == 1), ]
   perc.train <- (nfold -1) / nfold # fraction as-to how much of matrix is for testing
+  list.aucs <- rep(0, iter) # generate vector of AUCs representative of each iteration
   all.preds <- matrix(nrow=nrow(x), ncol=iter) # create matrix of all LASSO predictions
   rownames(all.preds) <- rownames(x) # save row names
   
@@ -160,12 +161,12 @@ toPredictionVector <- function(x, y, iter=1, nfold=5) {
     sample.fit.cv <- buildLASSOClassifier(x=sample.x, y=sample.y, nfold=nfold)
     iter.preds <- predict(sample.fit.cv, x, type='response', s=c('lambda.min')) # derive predictions
     all.preds[, i] <- iter.preds # save predictions produced from iteration to column i
-    
+    list.aucs[i] <- getAUC(sample.fit.cv) # set the desired AUC per iteration    
     time.iter <- format(.POSIXct(difftime(Sys.time(), time.start, units=c("secs")),tz="GMT"), "%H:%M:%S")
     cat(time.iter, 'h:m:s \n') # print on existing line.
   }
   all.preds <- rowSums(all.preds) / iter # average predictions for each observation
-  return(all.preds) # return observation-specific predictions
+  return(list('preds'=all.preds, 'aucs'=list.aucs)) # return observation-specific predictions
 }
 
 generateReport <- function(fit.cv, ratios, p.vals, out='./report.csv') {
