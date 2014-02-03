@@ -264,6 +264,20 @@ splitMatrix <- function(x, perc) {
   return(l)
 }
 
+mergePValues <- function(datas, out) {
+  my.list <- list()
+  for (i in 1: length(datas)) {
+    fname <- datas[i]
+    load(fname)
+    df <- as.data.frame(getPValues(data$h$x, data$h$y, 'BH'))
+    colnames(df) <- c(fname)
+    df$Seq <- row.names(df)
+    my.list[[i]] = df
+  }
+  merged <- join_all(dfs=my.list, match='first', by='Seq') # merge data and save to file
+  write.csv(merged, out)
+}
+
 getWeights <- function(fit.cv) {
   # Yields attribute weights (coefficients) given LASSO classifier.
   # Args:
