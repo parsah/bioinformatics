@@ -71,6 +71,8 @@ def unique_pwms(control, query):
 
 def write_matrix(m, f):
     df = pd.DataFrame(m)
+    for i, seq in enumerate(df['Sequence']):
+        df['Sequence'][i] = seq.replace(':', '.').replace('-', '.')
     df.to_csv(f)
 
 def build_matrix(control, query):
