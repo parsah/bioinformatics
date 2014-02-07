@@ -159,7 +159,7 @@ toPredictionVector <- function(x, y, iter=1, nfold=5) {
                             rep(0, nrow(control.train)))) # add target vector
     cat("[ Iteration ", i, '/', iter, ' ] ... ')
     sample.fit.cv <- buildLASSOClassifier(x=sample.x, y=sample.y, nfold=nfold)
-    iter.preds <- predict(sample.fit.cv, x, type='response', s=c('lambda.min')) # derive predictions
+    iter.preds <- doPrediction(sample.fit.cv, x) # derive predictions
     all.preds[, i] <- iter.preds # save predictions produced from iteration to column i
     list.aucs[i] <- getAUC(sample.fit.cv) # set the desired AUC per iteration    
     time.iter <- format(.POSIXct(difftime(Sys.time(), time.start, units=c("secs")),tz="GMT"), "%H:%M:%S")
@@ -264,18 +264,17 @@ splitMatrix <- function(x, perc) {
   return(l)
 }
 
-mergePValues <- function(datas, out) {
-  my.list <- list()
-  for (i in 1: length(datas)) {
-    fname <- datas[i]
-    load(fname)
-    df <- as.data.frame(getPValues(data$h$x, data$h$y, 'BH'))
-    colnames(df) <- c(fname)
-    df$Seq <- row.names(df)
-    my.list[[i]] = df
-  }
-  merged <- join_all(dfs=my.list, match='first', by='Seq') # merge data and save to file
-  write.csv(merged, out)
+doPrediction <- function(fit.cv, x) {
+  # Performs predictions given a count-matrix and a corresponding classifier.
+  # Args:
+  #   fit.cv: LASSO cross-validated (CV) classifier.
+  #   x: Matrix of dimensions i * j.
+  #
+  # Returns:
+  #   preds: vector of size i * 1 representing predictions per matrix row.
+  
+  preds <- predict(sample.fit.cv, x, type='response', s=c('lambda.min')) # derive predictions
+  return(preds)
 }
 
 getWeights <- function(fit.cv) {
