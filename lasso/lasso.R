@@ -35,45 +35,8 @@ buildLASSOClassifier <- function(x, y, nfold=3) {
   # Returns:
   #   LASSO classifier.
   
-  stopifnot(length(table(y)) == 2) # y vector must have 0 or 1 values only 
   fit.cv <- cv.glmnet(x, y, nfolds=nfold, type.measure='auc', family='binomial')
   return(fit.cv)
-}
-
-runNaiveClassifier <- function(f, out) {
-  # Provides an all-in-one function that performs classifier building and
-  # homogenization automatically. Classifiers are building using 10-fold
-  # cross-validation and 20 predictory iterations.
-  #
-  # Args:
-  #   f: Input CSV file.
-  #   out: Output file to save results to.
-  
-  n.folds <- 10 # by-default, have 10 cross-validation folds.
-  n.iter <- 20 # by-default, perform 20 predictive iterations.
-  thresh <- 0.5 # have default threshold of 0.5
-
-  # run functions given default scripts.
-  cat('Parsing CSV ...\n')
-  m <- parseCSV(f)
-  
-  cat('Building initial LASSO classifier, prediction matrix ...\n')
-  fit.original <- buildLASSOClassifier(m$x, m$y, nfold=n.folds)
-  preds <- toPredictionVector(m$x, m$y, nfold=n.folds, iter=n.iter)
-  
-  cat('Removing low-quality query-sequences ... \n')
-  h <- homogenize(m$x, m$y, preds$preds, thresh)
-
-  cat('Building revised LASSO classifier ... \n')
-  fit.homogenized <- buildLASSOClassifier(h$x, h$y, nfold=n.folds)
-  auc.original <- getAUC(fit.original)
-  auc.homogenized <- getAUC(fit.homogenized)
-  cat('   AUC (initial):', auc.original, '\n')
-  cat('   AUC (homogenized):', auc.homogenized, '\n')
-
-  generateReport(fit.homogenized, getRatios(h$x, h$y), # lastly, save output
-      getPValues(h$x, h$y, 'BH'), out)
-  cat('[ Operations complete ] \n')
 }
 
 getRatios <- function(x, y) {
@@ -92,12 +55,12 @@ getRatios <- function(x, y) {
   sum.query <- colSums(x[which(y == 1), ]) # sum rows referencing query targets
   sum.control <- colSums(x[which(y == 0), ]) # repeat for control
   ratio <- round(sum.query / sum.control, 4) # derive ratio
-  m <- cbind(ratio, sum.query, sum.control) # gather results in matrix
+  m <- as.matrix(cbind(ratio, sum.query, sum.control)) # gather results in matrix
   colnames(m) <- c('Ratio', 'Num.Query', 'Num.Control')
   return(m)
 }
 
-getPValues <- function(x, y, adj.method="none") {
+getPValues <- function(x, y, adj.method="BH") {
   # Derives adjusted p-values for each count matrix attribute based on 
   # abundance of the observation.
   #
@@ -262,6 +225,16 @@ splitMatrix <- function(x, perc) {
   test.matrix <- x[(idx+1): nrow(x), ] # derive smaller testing matrix
   l <- (list('test'=test.matrix, 'train'=train.matrix))
   return(l)
+}
+
+saveJob <- function(proj.name) {
+  # Saves the current workspace and corresponding history.
+  # Args:
+  #   proj.name: Project name to save workspace and history as.
+  
+  save.image(file=paste(proj.name, '.RData', sep=''))
+  savehistory(file=paste(proj.name,'.RHistory', sep=''))
+  cat(paste('Workspace, history saved to', getwd(), '\n' ,sep=' ')) 
 }
 
 doPrediction <- function(fit.cv, x) {
