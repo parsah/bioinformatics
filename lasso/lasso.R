@@ -190,41 +190,30 @@ homogenize <- function(x, y, preds, threshold = 0.5) {
   for (i in 1: nrow(query.counts)) {
     query.name <- row.names(query.counts)[i]
     query.pred <- query.preds[i] # whether the query passes threshold
-    match.pos <- grep(query.name, rownames.control, fixed=T)
+    match.pos <- grep(query.name, rownames.control, fixed=T) # vector of indices
 
     # if query prediction is true, add control and query data-points.
     if (query.pred >= threshold) {
       new.query <- rbind(new.query, query.counts[i, ]) # add passed queries.
-      new.control <- rbind(new.control, control.counts[match.pos, ]) # add its respective control.
-      names.control <- rbind(names.control, rownames.control[match.pos])
-      names.query <- rbind(names.query, query.name)
+      names.query <- rbind(names.query, query.name) # add query name
+      
+      # in the case of small datasets, a query may not have a corresponding
+      # control, thus handle instances whereby no match is found and add if so.
+      if (length(match.pos) > 0) { # if query maps to control, get first hit.
+        control.name <- rownames.control[match.pos[1]] # fetch first hit only
+        #cat( '   ',control.name, '\n')
+        new.control <- rbind(new.control, control.counts[match.pos, ]) # add its respective control.
+        names.control <- rbind(names.control, control.name) # add control name
+      }
     }
   }
+  
   rownames(new.query) <- names.query # add row-names to each data-frame.
   rownames(new.control) <- names.control
   new.x <- rbind(new.query, new.control) # merge counts into new matrix
   new.y <- as.matrix(c(rep(1, nrow(new.query)), # build target vector
                        rep(0, nrow(new.control))))
   return(list('x'=new.x, 'y'=new.y))
-}
-
-splitMatrix <- function(x, perc) {
-  # Splits a matrix into a training a test data-set given a training-set fraction.
-  # For example: if the fraction is 0.8, then 80% of the matrix is designated as the
-  # training set, while the remaining 20% is designated as the testing set.
-  # Args:
-  #   x: Matrix of dimensions i * j
-  #   perc: Fraction representing percentage of matrix rows, i, being training set.
-  # 
-  # Returns:
-  #   l: list representing training and testing data-sets.
-  
-  shuffled.matrix <- x[sample.int(nrow(x), replace=F), ] # shuffle provided matrix
-  idx <- floor(perc * nrow(shuffled.matrix)) # find index representing percentile
-  train.matrix <- x[1: idx, ] # derive training matrix
-  test.matrix <- x[(idx+1): nrow(x), ] # derive smaller testing matrix
-  l <- (list('test'=test.matrix, 'train'=train.matrix))
-  return(l)
 }
 
 saveJob <- function(proj.name) {
