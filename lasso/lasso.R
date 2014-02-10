@@ -246,7 +246,7 @@ doPrediction <- function(fit.cv, x) {
   # Returns:
   #   preds: vector of size i * 1 representing predictions per matrix row.
   
-  preds <- predict(sample.fit.cv, x, type='response', s=c('lambda.min')) # derive predictions
+  preds <- predict(fit.cv, x, type='response', s=c('lambda.min')) # derive predictions
   return(preds)
 }
 
