@@ -1,5 +1,5 @@
 '''
-Given a BED file and a set of genomic FASTA files, each genomic region in the 
+Given a BED file and a set of genomic FASTA file, each genomic region in the 
 BED file is paired with an equal-length genomic segment, matching its GC and 
 repeat content. Selecting such sequences therefore helps extract sequences 
 representative of a BED file which match its intrinsic properties; serving as
@@ -71,7 +71,7 @@ def run(bed, genome):
 if __name__ == '__main__':
     try:
         if len(sys.argv) < 2:
-            raise OSError('Provide BED file and genome folder, respectively [error].')
+            raise OSError('Provide BED file and genome file, respectively [error].')
         else:
             genome = parse_genomes(d = sys.argv[2])
             bed_file = parse_bed(f = sys.argv[1], g = genome)
