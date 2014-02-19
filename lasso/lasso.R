@@ -132,21 +132,21 @@ toPredictionVector <- function(x, y, iter=1, nfold=5) {
   return(list('preds'=all.preds, 'aucs'=list.aucs)) # return observation-specific predictions
 }
 
-generateReport <- function(fit.cv, ratios, p.vals, out='./report.csv') {
+generateReport <- function(fit.cv, x, y, out='./report.csv') {
   # Generates a report given a LASSO fit, PWM ratios, and their p-values.
   #
   # Args:
   #   fit.cv: LASSO cross-validated (CV) classifier.
-  #   ratios: Matrix of ratios given count matrix and target vector.
-  #   p.vals: Collection of p-values.
+  #   x: Count matrix of dimensions i * j
+  #   y: Target vector of dimensions i * 1
   #   out: Output file to save results to.
   #
   # Returns:
   #   Output results file defined by the out argument.
   
   df.weights <- as.data.frame(getWeights(fit.cv))
-  df.ratios <- as.data.frame(ratios)
-  df.pvals <- as.data.frame(p.vals)
+  df.ratios <- as.data.frame(getRatios(x, y))
+  df.pvals <- as.data.frame(getPValues(x, y, 'BH'))
   
   dflist <- list(df.weights, df.ratios, df.pvals)
   for (i in 1: length(dflist)) { # add a dummpy 'Seq' attribute to enable merging
@@ -154,7 +154,7 @@ generateReport <- function(fit.cv, ratios, p.vals, out='./report.csv') {
   }
   
   merged <- join_all(dfs=dflist, match='first', by='Seq') # merge data and save to file
-  rownames(merged) <- NULL # remove rownames; already present
+  merged$Importance <- merged$Weight * merged$Ratio # compute PWM importance
   write.csv(merged, out) # write merged martix to a file
 }
 
