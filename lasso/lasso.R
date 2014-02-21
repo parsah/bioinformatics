@@ -1,7 +1,7 @@
 library("glmnet")
 library("plyr")
 
-parseCSV <- function(f) {
+parseClassifiable <- function(f) {
   # Parses a user-provided CSV file that is representative of a 
   # count matrix and returns its target vector and counts.
   #
@@ -9,7 +9,8 @@ parseCSV <- function(f) {
   #   f: Input CSV file.
   #
   # Returns:
-  #   count-matrix target vector.
+  #   x: Count matrix of dimensions i * j.
+  #   y: Target vector of dimensions i * 1.
   
   df <- read.csv(file=f, header=T) # read matrix
   y <- as.matrix(df$Target) # extract target vector
@@ -21,7 +22,7 @@ parseCSV <- function(f) {
   df$Sequence <- NULL # first column not needed
   x <- as.matrix(df) # everything else are PWM counts
   rownames(x) <- seqs
-  return(list('x'=x, 'y'=y)) # parse matrix and target vector
+  return(list('x'=x, 'y'=y)) # return matrix and target vector
 }
 
 buildLASSOClassifier <- function(x, y, nfold=3) {
