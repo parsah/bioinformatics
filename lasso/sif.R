@@ -24,6 +24,22 @@ parseCounts <- function(f) {
   return(list('x'=x, 'corr'=cor.x)) # return matrix and its correlation
 }
 
+toNodeAttributes <- function(x, rank.cutoff=200, out='./node-attribs.csv') {
+  # Writes contents of a matrix such that the number of times a PWMs
+  # ordered rank is below the cutoff is enumerated.
+  #
+  # Args:
+  #   x: Matrix of dimensions i * j.
+  #   rank.cutoff: Weights equal or below this rank are enumated.
+  #   out: Output filename to save attributes to.
+  
+  x.ordered <- orderMatrix(x) # order the matrix
+  counts <- as.matrix(rowSums(x.ordered <= rank.cutoff))
+  counts[counts == 0] <- 0
+  df <- data.frame('Seq'=rownames(counts), 'Num.lines'=counts)
+  write.csv(df, out, row.names=F)  
+}
+
 filterMatrix <- function(x, threshold=0.01) {
   # Linearizes a matrix so that each specific individual element can be easily manipulated.
   #
