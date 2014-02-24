@@ -154,7 +154,7 @@ generateReport <- function(fit.cv, x, y, out='./report.csv') {
     dflist[[i]]$Seq <- rownames(dflist[[i]])
   }
   
-  merged <- join_all(dfs=dflist, match='first', by='Seq') # merge data and save to file
+  merged <- join_all(dfs=dflist, match='first', by='Seq', type='full') # merge data and save to file
   merged$Importance <- merged$Weight * merged$Ratio # compute PWM importance
   write.csv(merged, out) # write merged martix to a file
 }

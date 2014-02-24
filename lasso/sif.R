@@ -1,4 +1,5 @@
 library("reshape")
+library("plyr")
 
 parseCounts <- function(f) {
   # Parses a user-provided CSV file that is representative of a 
@@ -65,9 +66,45 @@ toEdgeAttributes <- function(x, out='./edge-attribs.csv') {
   write.csv(sif.data, out, quote=F, row.names=F)
 }
 
+orderMatrix <- function(x) {
+  # Iteratively ranks a matrix given its respective columns.
+  #
+  # Args:
+  #   x: Matrix of dimensions i * j.
+  #   ordered.mat: Ordered matrix of dimensions i * j.
+  
+  n.row <- dim(x)[1]; n.col <- dim(x)[2]
+  ordered.mat <- matrix(nrow=n.row, ncol=n.col) # create matrix of NAs
+  for (col.num in 1:n.col) { # iterate over each column.
+    col <- x[, col.num]
+    ordered.mat[, col.num] <- rank(-col) # rank column and set to matrix
+  }
+  colnames(ordered.mat) <- colnames(x)
+  rownames(ordered.mat) <- rownames(x)
+  return(ordered.mat) # return the ordered matrix
+}
+
 parseReports <- function(...) {
-#  args <- list(...)
-#  for (idx in 1:length(args) {
-#    cat(args[idx],'\n')
-#  }
+  # Iteratively ranks a matrix given its respective columns.
+  #
+  # Args:
+  #   ... : Reports generated from the generateReport(...) LASSO function.
+  # Returns:
+  #   merged.m: Matrix of how many unique rows and columns are in all reports.
+  
+  files <- list(...)
+  list.files <- list() # stored processed files.
+  col.names <- c()
+  for (idx in 1:length(files)) {
+    col.names <- cbind(col.names, basename(files[[idx]])) # save column names
+    df <- read.csv(files[[idx]]) # read-in the respective report file.
+    df <- data.frame('Seq'=df$Seq, df$Importance) # pull-out important columns
+    names(df)[2] <- paste(basename(files[[idx]]))
+    list.files[[idx]] <- df # add data-frame to list for sorting    
+  }
+  merged.df <- join_all(dfs=list.files, by='Seq', match='first', type='full')
+  rownames(merged.df) <- merged.df$Seq # set Sequence (Seq) i.e. PWM as row-names
+  merged.df$Seq <- NULL
+  merged.m <- na.omit(as.matrix(merged.df)) # return ordered matrix as well as merged weights
+  return(merged.m)
 }
