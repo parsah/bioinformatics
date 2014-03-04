@@ -17,6 +17,7 @@ import itertools
 import pandas
 
 FEATURE_START = 5 # column within BED file where entries begin from.
+NODE_DELIM = '-' # delimiter for separating nodes.
 
 def parse_bed(f):
     ''' 
@@ -30,7 +31,7 @@ def parse_bed(f):
     df = pandas.read_table(f)
     return df
 
-def build_combinations(seq, root):
+def build_combinations(seq):
     ''' 
     Given a sequence (list), combinatorial sets within this collection
     are generated ranging from length 1 to the length of the list.
@@ -42,7 +43,6 @@ def build_combinations(seq, root):
     [2, 1,2, 1,2,3, etc].
     
     @param seq: Collection of objects.
-    @param root: object within seq for serving as the parent combination.
     @return: set of valid combinations built around root combination.
     '''
     
@@ -50,7 +50,7 @@ def build_combinations(seq, root):
     for rep in range(len(seq)-1):
         prods = list(itertools.product(seq, repeat=rep+1))
         for i in prods:
-            if root in i: # only add combination if contains root feature
+            if FEATURE_START in i: # only add combination if contains root feature
                 i = set(i)
                 if i not in all_prods: # for eg. ABC is same as BAC or CAB.
                     all_prods.add(frozenset(i)) # remove these duplicates.
@@ -60,7 +60,7 @@ def build_combinations(seq, root):
     all_prods.add(frozenset(list(seq)))
     return all_prods
 
-def enumerate_features(df, rootcol):
+def enumerate_nodes(df):
     ''' 
     Analyzes the parsed data-frame and pulls-out columns that map to
     features within the BED file. Features are therefore enumerated so that
@@ -71,7 +71,7 @@ def enumerate_features(df, rootcol):
     @param rootcol: Column index within data-frame serving as the root. 
     '''
     
-    print('Root feature:', df.columns[rootcol]) # display root feature
+    print('Root feature:', df.columns[FEATURE_START]) # display root feature
     print('All features:') # show column numbers of all features
     
     all_cols = list(df.columns[FEATURE_START: ]) # get feature columns
@@ -81,28 +81,58 @@ def enumerate_features(df, rootcol):
     # next, generate a sequence for deriving feature combinations given root
     print('Building feature combinations ...')
     seq = list(range(FEATURE_START, len(all_cols) + FEATURE_START))
-    combs = build_combinations(seq, rootcol)
+    combs = build_combinations(seq)
     
     # for each feature combination, fetch respective columns and enumerate
-    maps = {} # key => feature-set, value => count sequences are found in set.
+    mappings = {}
     for c in combs:
-        cols = list(c)
-        print(c, cols)
+        cols = sorted(list(c)) 
         selected_df = pandas.DataFrame(df[cols])
         selected_df['rowsum'] = selected_df.sum(axis=1)  # row-wise summation
         selected_df = selected_df[selected_df.rowsum == len(cols)]
-        print(selected_df.shape)
+        num_rows = selected_df.shape[0]
+        mappings[tuple(cols)] = num_rows
+    return mappings
 
+def to_sif(d, df):
+    handle = open('nodes.sif', 'w')
+    keys = sorted(list(d.keys()), key=len)
+    for i in keys:
+        i = list(i)
+        for j in keys:
+            j = list(j)
+            if i != j:
+                if j == i[0: len(i)-1]:
+                    node_a = NODE_DELIM.join([df.columns[idx] for idx in i])
+                    node_b = NODE_DELIM.join([df.columns[idx] for idx in j])
+                    handle.write(node_a + ' pp ' +node_b + '\n')
+                    handle.flush()
+    handle.close()
+    print('SIF file saved [OK]')
+    
+def to_node_attrib(d, df):
+    handle = open('nodes.csv', 'w')
+    handle.write('Node,Enhancer.Count\n')
+    handle.flush()
+    
+    for i in d:
+        node = NODE_DELIM.join([df.columns[idx] for idx in i])
+        handle.write(node + ',' + str(d[i]) + '\n')
+        handle.flush()
+    handle.close()
+    print('Node attributes saved [OK]')
+    
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-bed', required=True, metavar='FILE',
                         help='BED from multiIntersectBed (w / headers) [reqd]')
-    parser.add_argument('-root', type=int, default=5, metavar='INT',
-                        help='Feature column serving as root; zero idx [5]')
     args = vars(parser.parse_args())
     try:
         df = parse_bed(f = args['bed'])
-        enumerate_features(df=df, rootcol=args['root'])
+        maps = enumerate_nodes(df=df)
+        to_sif(maps, df)
+        to_node_attrib(maps, df)
+        
     except IOError as e:
         print(e)
     except KeyboardInterrupt:
