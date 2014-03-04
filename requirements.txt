@@ -5,3 +5,5 @@ pandas
 biopython
 scipy
 scikit-learn
+networkx
+matplotlib
