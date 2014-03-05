@@ -61,14 +61,14 @@ plotCircularBarChart = function(df, color=rainbow(ncol(df)-2), circ.height=0.8, 
     col.matrix[clus.num, 1] <- clus.num # set cluster number
     col.matrix[clus.num, 2] <- color[clus.num] # set cluster color
     cat('Row', i, '/', nrow(df), 
-        '; cluster', df$cluster[i], ';', color[df$cluster[i]], '\n')
+        '; cluster', clus.num, ';', color[clus.num], '\n')
     for (j in 3:ncol(df)) {
       # get beginning of each cluster and all positions referencing this region.
       start = offsets[df[i, 2]] + df[i, 1]
       polygonChrom(begin = start, end = start + 1, len.chrom = tot.length, 
                    radius.in = j - 2, 
                    radius.out = (df[i, j] * scales[j - 2]) + j - 2, 
-                   col=color[df$cluster[i]])
+                   col=color[clus.num])
     }
   }
   return(as.data.frame(col.matrix))
