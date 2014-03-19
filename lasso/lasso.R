@@ -248,7 +248,7 @@ getWeights <- function(fit.cv) {
   # Returns:
   #   weights: Dataframe of attributes and their respective weights.
 
-  m <- as.matrix(coef(fit.cv), s=min(fit.init$lambda))
+  m <- as.matrix(coef(fit.cv), s=min(fit.cv$lambda))
   df <- data.frame('Weight' = m[, 1])
   rownames(df) <- rownames(m)
   return(df)
