@@ -1,5 +1,4 @@
 library("glmnet")
-library("plyr")
 
 parseClassifiable <- function(f) {
   # Parses a user-provided CSV file that is representative of a 
@@ -55,8 +54,9 @@ getRatios <- function(x, y) {
   stopifnot(length(table(y)) == 2) # y vector must have 0 or 1 values only 
   sum.query <- colSums(x[which(y == 1), ]) # sum rows referencing query targets
   sum.control <- colSums(x[which(y == 0), ]) # repeat for control
-  ratio <- round(sum.query / sum.control, 4) # derive ratio
+  ratio <- round(sum.query / sum.control, 2) # derive ratio
   m <- as.matrix(cbind(ratio, sum.query, sum.control)) # gather results in matrix
+  m <- as.matrix(m[order(row.names(m)), ]) # order by row-name
   colnames(m) <- c('Ratio', 'Num.Query', 'Num.Control')
   return(m)
 }
@@ -133,30 +133,24 @@ toPredictionVector <- function(x, y, iter=1, nfold=5) {
   return(list('preds'=all.preds, 'aucs'=list.aucs)) # return observation-specific predictions
 }
 
-generateReport <- function(fit.cv, x, y, out='./report.csv') {
+generateReport <- function(weights, ratios, out='./report.csv') {
   # Generates a report given a LASSO fit, PWM ratios, and their p-values.
   #
   # Args:
-  #   fit.cv: LASSO cross-validated (CV) classifier.
-  #   x: Count matrix of dimensions i * j
-  #   y: Target vector of dimensions i * 1
+  #   weights: LASSO weights derived using getWeights.
+  #   ratios: Feature ratios derived using getRatios
   #   out: Output file to save results to.
   #
   # Returns:
   #   Output results file defined by the out argument.
   
-  df.weights <- as.data.frame(getWeights(fit.cv))
-  df.ratios <- as.data.frame(getRatios(x, y))
-  df.pvals <- as.data.frame(getPValues(x, y, 'BH'))
-  
-  dflist <- list(df.weights, df.ratios, df.pvals)
-  for (i in 1: length(dflist)) { # add a dummpy 'Seq' attribute to enable merging
-    dflist[[i]]$Seq <- rownames(dflist[[i]])
-  }
-  
-  merged <- join_all(dfs=dflist, match='first', by='Seq', type='full') # merge data and save to file
-  merged$Importance <- merged$Weight * merged$Ratio # compute PWM importance
-  write.csv(merged, out) # write merged martix to a file
+  imp <- weights * ratios[, 1] # importance => weight * ratio
+  colnames(imp) <- c('Importance')
+  report.mat <- cbind(weights, ratios, imp)
+
+  # test that row-names are shared between weights and ratios
+  stopifnot(identical(rownames(weights), rownames(ratios)))
+  write.csv(report.mat, out) # write merged martix to a file
 }
 
 homogenize <- function(x, y, preds, threshold = 0.5) {
@@ -240,18 +234,25 @@ doPrediction <- function(fit.cv, x) {
   return(preds)
 }
 
-getWeights <- function(fit.cv) {
+getWeights <- function(fit.cv, norm.weights=T) {
   # Yields attribute weights (coefficients) given LASSO classifier.
   # Args:
   #   fit.cv: LASSO cross-validated (CV) classifier.
+  #   norm.weights: Z-normalize LASSO weights.
   #
   # Returns:
   #   weights: Dataframe of attributes and their respective weights.
 
   m <- as.matrix(coef(fit.cv, s=min(fit.cv$lambda)))
-  df <- data.frame('Weight' = m[, 1])
-  rownames(df) <- rownames(m)
-  return(df)
+  if (norm.weights) { # standardize LASSO weights, if sought.
+    avg <- mean(m)
+    stdev <- sd(m)
+    m <- ((m - avg) / stdev)
+  }
+  m <- as.matrix(m[order(row.names(m)), ]) # order weights by row-name
+  m <- as.matrix(m[row.names(m) != '(Intercept)', ]) # intercept weight not needed
+  colnames(m) <- c('Weight')
+  return(m)
 }
 
 getAUC <- function(fit.cv) {
