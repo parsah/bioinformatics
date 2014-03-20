@@ -254,7 +254,7 @@ getWeights <- function(fit.cv, scale.weights=T) {
     for (i in 1: length(m)) {
       val <- m[i, 1] # retrieve the current value
       if (val < 0) { # normalize weights less than zero
-        m[i, 1] <- -1 - ((val - weights.min) / (-weights.min))
+        m[i, 1] <- -1 * ( 1 - ( ( val - weights.min ) / -weights.min ) )
       }
       else { # normalize weights greater-than or equal to zero
         m[i, 1] <- val / weights.max # maximum weight is set to 1.0
