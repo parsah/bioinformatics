@@ -213,6 +213,7 @@ homogenize <- function(x, y, preds, threshold = 0.5) {
 
 saveJob <- function(proj.name) {
   # Saves the current workspace and corresponding history.
+  #
   # Args:
   #   proj.name: Project name to save workspace and history as.
   
@@ -234,21 +235,33 @@ doPrediction <- function(fit.cv, x) {
   return(preds)
 }
 
-getWeights <- function(fit.cv, norm.weights=T) {
+getWeights <- function(fit.cv, scale.weights=T) {
   # Yields attribute weights (coefficients) given LASSO classifier.
+  # Weights can be scaled based on whether they are positive or
+  # negative. Such scaling is based off Taher, et. al., 2013.
+  #
   # Args:
   #   fit.cv: LASSO cross-validated (CV) classifier.
-  #   norm.weights: Z-normalize LASSO weights.
+  #   scale.weights: Z-normalize LASSO weights.
   #
   # Returns:
   #   weights: Dataframe of attributes and their respective weights.
 
   m <- as.matrix(coef(fit.cv, s=min(fit.cv$lambda)))
-  if (norm.weights) { # standardize LASSO weights, if sought.
-    avg <- mean(m)
-    stdev <- sd(m)
-    m <- ((m - avg) / stdev)
+  if (scale.weights) { # standardize LASSO weights, if sought.
+    weights.min <- min(m)
+    weights.max <- max(m)
+    for (i in 1: length(m)) {
+      val <- m[i, 1] # retrieve the current value
+      if (val < 0) { # normalize weights less than zero
+        m[i, 1] <- -1 - ((val - weights.min) / (-weights.min))
+      }
+      else { # normalize weights greater-than or equal to zero
+        m[i, 1] <- val / weights.max # maximum weight is set to 1.0
+      }
+    }
   }
+  
   m <- as.matrix(m[order(row.names(m)), ]) # order weights by row-name
   m <- as.matrix(m[row.names(m) != '(Intercept)', ]) # intercept weight not needed
   colnames(m) <- c('Weight')
@@ -257,6 +270,7 @@ getWeights <- function(fit.cv, norm.weights=T) {
 
 getAUC <- function(fit.cv) {
   # Identifies the Area Under Curve (AUC) of a LASSO classifier.
+  #
   # Args:
   #   fit.cv: LASSO cross-validated (CV) classifier.
   #
