@@ -18,13 +18,14 @@ import pandas
 import os
 
 FEATURE_START = 5 # column within BED file where entries begin from.
-NODE_DELIM = '-' # delimiter for separating nodes.
+NODE_DELIM = '---' # delimiter for separating nodes.
 
 class MultiBEDWorker():
     def __init__(self, f):
         self.df = pandas.read_table(f) # input BED generated using multiIntersectBed.
         self.df_combinations = [] # list of BED combinations
-
+        self.combinations = set() # set of all possible combinations
+        
     def enumerate_bed(self):
         ''' 
         Analyzes the parsed data-frame and pulls-out columns that map to
@@ -43,10 +44,10 @@ class MultiBEDWorker():
         # next, generate a sequence for deriving feature combinations given root
         print('Building feature combinations ...')
         seq = list(range(FEATURE_START, len(all_cols) + FEATURE_START))
-        combs = self.get_combinations(seq)
+        self.build_combinations(seq)
         
         # for each feature combination, fetch respective columns and enumerate
-        for c in combs:
+        for c in self.get_combinations():
             features = sorted(list(c))
             
             # data-frame row-names are its chromosome and start-end indices. 
@@ -64,7 +65,7 @@ class MultiBEDWorker():
             
         assert len(self.df_combinations) > 0 # combinations must be present
 
-    def get_combinations(self, seq):
+    def build_combinations(self, seq):
         ''' 
         Given a sequence (list), combinatorial sets within this collection
         are generated ranging from length 1 to the length of the list.
@@ -79,19 +80,20 @@ class MultiBEDWorker():
         @return: set of valid combinations built around root combination.
         '''
         
-        all_prods = set()
         for rep in range(len(seq)-1):
             prods = list(itertools.product(seq, repeat=rep+1))
             for i in prods:
                 if FEATURE_START in i: # only add combination if contains root feature
                     i = set(i)
-                    if i not in all_prods: # for eg. ABC is same as BAC or CAB.
-                        all_prods.add(frozenset(i)) # remove these duplicates.
+                    if i not in self.combinations: # for eg. ABC is same as BAC or CAB.
+                        self.combinations.add(frozenset(i)) # remove these duplicates.
     
-        if len(all_prods) == 0: # if root column index is < feature start, yield error. 
+        if len(self.combinations) == 0: # if root column index is < feature start, yield error. 
             raise IOError('0 combinations made. Root index must be >= feature start.')
-        all_prods.add(frozenset(list(seq)))
-        return all_prods
+        self.combinations.add(frozenset(list(seq)))
+    
+    def get_combinations(self):
+        return self.combinations
     
     def save_combinations(self, outdir):
         ''' 
@@ -111,34 +113,35 @@ class MultiBEDWorker():
                 handle.flush()
             handle.close()
         print('All analyses complete [OK]')
-
-def to_sif(d, df):
-    handle = open('nodes.sif', 'w')
-    keys = sorted(list(d.keys()), key=len)
-    for i in keys:
-        i = list(i)
-        for j in keys:
-            j = list(j)
-            if i != j:
-                if j == i[0: len(i)-1]:
-                    node_a = NODE_DELIM.join([df.columns[idx] for idx in i])
-                    node_b = NODE_DELIM.join([df.columns[idx] for idx in j])
-                    handle.write(node_a + ' pp ' +node_b + '\n')
-                    handle.flush()
-    handle.close()
-    print('SIF file saved [OK]')
     
-def to_node_attrib(d, df):
-    handle = open('nodes.csv', 'w')
-    handle.write('Node,Enhancer.Count\n')
-    handle.flush()
+    def to_sif(self, outdir):
+        handle = open(outdir + '/nodes.sif', 'w')
+        keys = sorted(list(self.get_combinations()), key=len)
+        for i in keys:
+            i = list(i)
+            for j in keys:
+                j = list(j)
+                if i != j:
+                    if j == i[0: len(i)-1]:
+                        node_a = NODE_DELIM.join([self.df.columns[idx] for idx in i])
+                        node_b = NODE_DELIM.join([self.df.columns[idx] for idx in j])
+                        handle.write(node_a + ' pp ' +node_b + '\n')
+                        handle.flush()
+        handle.close()
+        print('SIF file saved [OK]')
     
-    for i in d:
-        node = NODE_DELIM.join([df.columns[idx] for idx in i])
-        handle.write(node + ',' + str(d[i]) + '\n')
+    def to_node_attrib(self, outdir):
+        handle = open(outdir + '/nodes.csv', 'w')
+        handle.write('Node,Num.Enhancers,Depth\n')
         handle.flush()
-    handle.close()
-    print('Node attributes saved [OK]')
+        for i in self.df_combinations:
+            node = NODE_DELIM.join(i.columns)
+            n_enhancers = i.shape[0] # number of enhancers in the combination
+            n_depth = node.count(NODE_DELIM) + 1 # the first depth is the root itself
+            handle.write(node + ',' + str(n_enhancers) + ',' + str(n_depth) + '\n')
+            handle.flush()
+        handle.close()
+        print('Node attributes saved [OK]')
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -151,8 +154,8 @@ if __name__ == '__main__':
         worker = MultiBEDWorker(f = args['bed'])
         worker.enumerate_bed()
         worker.save_combinations(outdir = args['o'])
-        #to_sif(maps, df)
-        #to_node_attrib(maps, df)
+        worker.to_sif(outdir = args['o'])
+        worker.to_node_attrib(outdir = args['o'])
         
     except IOError as e:
         print(e)
