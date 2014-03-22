@@ -140,13 +140,14 @@ class BEDNetworkBuilder():
 
     def to_sif(self, outdir):
         handle = open(outdir + '/nodes.sif', 'w')
-        keys = sorted(list(self.enum.get_combinations().keys()), key=len)
-        for i in keys:
-            i = list(i)
-            for j in keys:
-                j = list(j)
+        combs = sorted(list(self.enum.get_combinations().keys()), key=len)
+        for i in combs: # iterate over all combinations.
+            i = sorted(list(i)) # node-list for node A
+            for j in combs:
+                j = sorted(list(j)) # node-list for node B
                 if i != j:
-                    if j == i[0: len(i)-1]:
+                    if j == i[0: len(i)-1]: # node A must be a child of B
+                        # get node-names for both node-list A and B
                         node_a = NODE_DELIM.join([self.enum.df.columns[idx] for idx in i])
                         node_b = NODE_DELIM.join([self.enum.df.columns[idx] for idx in j])
                         handle.write(node_a + ' pp ' +node_b + '\n')
