@@ -51,9 +51,19 @@ def product(seq):
 
 class MultiBEDEnumerator():
     def __init__(self, f):
-        self.df = pandas.read_table(f) # input BED generated using multiIntersectBed.
-        self.combinations = {} # K => combination, V => corresponding data-frame.
-        self.features = [] # list of features comprising the BED file.
+        self.df = pandas.read_table(f) # BED from multiIntersectBed.
+        self.combinations = {} # K => combination, V => a data-frame.
+        self.features = list(self.df.columns[FEATURE_START: ]) #  BED features.
+    
+    def debug(self):
+        ''' 
+        Print-out important information about the BED file and which
+        features are used for analysis.
+        '''
+        print('Root feature:', self.df.columns[FEATURE_START]) # root feature
+        print('All features:') # show column numbers of all features
+        for num, feature in enumerate(self.features):
+            print(FEATURE_START + num, '=>' ,feature)
     
     def enumerate(self):
         ''' 
@@ -62,31 +72,32 @@ class MultiBEDEnumerator():
         you can discern how many items are mapped to each combination
         (beginning at the parent-most node which is the root).
         '''
-
-        print('Root feature:', self.df.columns[FEATURE_START]) # root feature
-        print('All features:') # show column numbers of all features
-        self.features = list(self.df.columns[FEATURE_START: ]) # feature columns
-        for num, feature in enumerate(self.features):
-            print(FEATURE_START + num, '=>' ,feature)
         
+        self.debug() # print 
         print('Building feature combinations ...')
         seq = list(range(FEATURE_START, len(self.features) + FEATURE_START))
-        
         for comb in product(seq): # per combination, fetch the desired columns.
             rows = self.df['chrom'] + ' '  + self.df['start'].map(str) + ' ' + self.df['end'].map(str)
-            
-            df = pandas.DataFrame(self.df[sorted(list(comb))]) # get features
+            df = pandas.DataFrame(self.df[sorted(list(comb))])
             df = df.set_index(rows)
-            df['rowsum'] = df.sum(axis=1)  # row-wise summation
-                        
-            df = df[df['rowsum'] == (df.shape[1]-1)] # enhancer to be in all lines  
-            df = df.drop('rowsum', axis=1) # sums no longer needed
+            df = df[df.sum(axis=1) == (df.shape[1])] # get enhancers in all lines  
             self.combinations[comb] = df # lastly, add to central list
 
     def get_combinations(self):
+        ''' 
+        Return a dictionary of combinations and the data-frames that 
+        reference such combinations.
+        
+        @return: dictionary of combinations and data-frames.
+        '''
         return self.combinations
     
     def get_features(self):
+        ''' 
+        Returns all features used for combinatorial analysis.
+
+        @return: list of features.
+        '''
         return self.features
     
     def save(self, outdir):
