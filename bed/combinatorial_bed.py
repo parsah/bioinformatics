@@ -50,7 +50,22 @@ def product(seq):
     return combs
 
 class MultiBEDEnumerator():
+    ''' 
+    A MultiBEDEnumerator object is responsible for the parsing of
+    multiIntersectBed files. Such files are essentially BED files
+    whereby each entry references which other BED file a specific
+    entry is found in. Presence of a BED entry in another BED file
+    is measured by a binary (0, 1) value. Instantiations of this class
+    therefore facilitate identification of all possible BED files 
+    and the set of BED entries within each such combination.
+    '''
+    
     def __init__(self, f):
+        ''' 
+        Constructs an object of type MultiBEDEnumerator.
+        
+        @param f: Input BED file generated from multiIntersectBED.
+        '''
         self.df = pandas.read_table(f) # BED from multiIntersectBed.
         self.combinations = {} # K => combination, V => a data-frame.
         self.features = list(self.df.columns[FEATURE_START: ]) #  BED features.
@@ -112,12 +127,11 @@ class MultiBEDEnumerator():
         for df in list(self.combinations.values()):
             fname = NODE_DELIM.join(list(df.columns)).replace('.bed', '')
             handle = open(outdir + '/' + fname + '.bed', 'w')
-            print('Writing BED file for', fname)
+            print('  => Writing BED for', fname)
             for idx in df.index:
                 handle.write(idx + '\n')
                 handle.flush()
             handle.close()
-        print('All analyses complete [OK]')
 
 class BEDNetworkBuilder():
     def __init__(self, enum):
@@ -140,27 +154,38 @@ class BEDNetworkBuilder():
         handle.close()
         print('SIF file saved [OK]')
     
-    def to_node_attrib(self, outdir):    
+    def to_node_attrib(self, outdir):
+        ''' 
+        Saves node properties to facilitate additional visualizations.
+        This resultant properties file contains the node name, the number
+        of enhancers this node references, and how many cell-lines make-up
+        this cell-line combination. In addition, there are columns for
+        keeping track of the proportion of which lines are in the 
+        combination. For instance, if the line contains [A, C, D], then
+        A, C, and D, would each have a score of 0.33, but B and every
+        line not A, C, D, would have a score of 0.0.
+        
+        @param outdir: Output folder for saving file to. 
+        '''
         cols = ['Node', 'Num.Enhancers', 'Depth'] + self.enum.get_features()
-        idx = list(range(len(self.enum.get_combinations())))
+        idx = list(range(len(self.enum.get_combinations()))) # rows
         
         # per combination, derive its attributes for further analysis.
         df = pandas.DataFrame(columns = cols, index = idx)
-        for rownum, df_comb in enumerate(self.enum.get_combinations().values()):
-            node_name = NODE_DELIM.join(df_comb.columns)
-            node_depth = node_name.count(NODE_DELIM) + 1
-            df.loc[rownum, 'Node'] = node_name
-            df.loc[rownum, 'Num.Enhancers'] = df_comb.shape[0]
-            df.loc[rownum, 'Depth'] = node_depth
+        df = df.fillna(0.0) # empty-fill matrix
+        for rownum, comb in enumerate(self.enum.get_combinations().values()):
+            comb_name = NODE_DELIM.join(comb.columns)
+            comb_depth = comb_name.count(NODE_DELIM) + 1
+            df.loc[rownum, 'Node'] = comb_name # set column values
+            df.loc[rownum, 'Num.Enhancers'] = comb.shape[0]
+            df.loc[rownum, 'Depth'] = comb_depth
             
             # determine proportion of each feature per combination.
             for feat in self.enum.get_features():
-                if feat in node_name: # if found, derive proportion
-                    df.loc[rownum, feat] = round(1.0 / node_depth, 2)
-                else: # if not found, proportion is 0.0.
-                    df.loc[rownum, feat] = 0.0
+                if feat in comb_name: # if found, derive proportion
+                    df.loc[rownum, feat] = round(1.0 / comb_depth, 2)
                                 
-        df.to_csv(outdir + '/node-attribs.csv')
+        df.to_csv(outdir + '/node-attribs.csv', index=False)
         print('Node attributes saved [OK]')
     
 if __name__ == '__main__':
@@ -171,14 +196,15 @@ if __name__ == '__main__':
                         help='Output folder for saving BED combinations [./output]')
     args = vars(parser.parse_args())
     try:
+        # handles most of the combinatorial logic dealing with BED files.
         worker = MultiBEDEnumerator(f = args['bed'])
         worker.enumerate()
         worker.save(outdir = args['o'])
-
+        
+        # generates graph files and its attributes given combinatorial output. 
         net_builder = BEDNetworkBuilder(worker)
         net_builder.to_sif(outdir = args['o'])
         net_builder.to_node_attrib(outdir = args['o'])
-        
     except IOError as e:
         print(e)
     except KeyboardInterrupt:
