@@ -7,8 +7,9 @@ import hashlib
 import sys
 from Bio import SeqIO
 
+
 def process_seqs(fname):
-    ''' 
+    '''
     For each sequence, compute a hash and test if this hash exists in our
     dictionary. If so, that respective sequence is a duplicate and therefore
     not represented as output.
@@ -21,9 +22,9 @@ def process_seqs(fname):
         as_bytes = sequence.encode(encoding='utf-8')
         sha512.update(as_bytes)
         hex_repr = sha512.hexdigest()
-        if hex_repr not in hashes: # if sequence is unique, send to stdout.
+        if hex_repr not in hashes:  # if sequence is unique, send to stdout.
             hashes.add(hex_repr)
-            sys.stdout.write('>' + header + '\n' + sequence+'\n')
+            sys.stdout.write('>' + header + '\n' + sequence + '\n')
             sys.stdout.flush()
 
 if __name__ == '__main__':

@@ -7,13 +7,15 @@ import argparse
 import re
 from Bio import SeqIO
 
+
 def display_seq(header, seq):
-    ''' 
+    '''
     Prints sequence header and sequence information in FASTA format
     @param header: FASTA header
     @param seq: FASTA sequence
     '''
     print('>' + header + '\n' + seq)
+
 
 def run(fname, is_filter):
     entries = SeqIO.parse(fname, 'fasta')
@@ -22,17 +24,16 @@ def run(fname, is_filter):
         num_a, num_t, num_n = seq.count('A'), seq.count('T'), seq.count('N')
         num_g, num_c = seq.count('G'), seq.count('C')
         if (num_a + num_c + num_g + num_t + num_n) == len(seq):
-            display_seq(header = i.description, seq = seq) # clean sequence
+            display_seq(header=i.description, seq=seq)  # clean sequence
         elif is_filter:
-            corrected_seq = re.sub('[^ATGCN]', 'N', seq) # filter bases
-            display_seq(header = i.description, seq = corrected_seq)
+            corrected_seq = re.sub('[^ATGCN]', 'N', seq)  # filter bases
+            display_seq(header=i.description, seq=corrected_seq)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', required=True, metavar='FASTA',
                         help='FASTA file [na]')
     parser.add_argument('--mask', action='store_const', const=True,
-                        default=False, help='Mask non-ATGCN bases as N [false]')
+                        default=False, help='Hard-mask non-ATGCN [false]')
     args = vars(parser.parse_args())
-    run(fname = args['i'], is_filter = args['mask'])
-    
+    run(fname=args['i'], is_filter=args['mask'])
