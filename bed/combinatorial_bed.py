@@ -107,7 +107,7 @@ class MultiBEDWorker():
             handle = open(outdir + '/' + fname + '.bed', 'w')
             print('Writing BED file for', fname)
             for idx in df.index:
-                handle.write(idx + '\n')
+                handle.write(idx.replace(' ', '\t') + '\n')
                 handle.flush()
             handle.close()
         print('All analyses complete [OK]')
