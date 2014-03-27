@@ -134,7 +134,7 @@ class MultiBEDEnumerator():
             handle = open(outdir + '/' + fname + '.bed', 'w')
             print('  => Writing BED for', fname)
             for idx in df.index:
-                handle.write(idx + '\n')
+                handle.write(idx.replace(' ', '\t') + '\n')
                 handle.flush()
             handle.close()
 
