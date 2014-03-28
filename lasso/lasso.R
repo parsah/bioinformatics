@@ -91,6 +91,40 @@ getPValues <- function(x, y, adj.method="BH") {
   return(p.vals)
 }
 
+runNaiveBuilder <- function(dir) {
+  # Constructs LASSO classifiers for all classifiable matrices within a
+  # user-provided directory. Traditionally, a classifier is built on an
+  # individual basis, however there may be instances were there are
+  # many matrices to be classified and laborious to perform one-by-one.
+  # This function automates all functions involved in LASSO 
+  # construction, saving all results and outputs.
+  #
+  # Args:
+  #  dir: Folder with at least 1x classifiable file; see parseClassifiable.
+
+  setwd(dir) # set working directory to folder so files can be saved easily.
+  contents <- list.files(path=dir, pattern=".csv$") # only get CSV files.
+  for (i in 1: length(contents)) {
+    csv.file <- contents[i] # references the current CSV file.
+    proj.name <- gsub(".csv$", "", csv.file) # references RData, RHistory
+    report.name <- gsub('.csv$', '_report.csv', csv.file) # report file
+
+    # Classifier construction and prediction
+    cat('Processing', csv.file, '...\n')
+    m <- parseClassifiable(f=csv.file)
+    fit.init <- buildLASSOClassifier(x=m$x, y=m$y, nfold=10)
+    preds <- toPredictionVector(x=m$x, y=m$y, iter=10, nfold=10)
+    h <- homogenize(x=m$x, y=m$y, preds=preds$preds)
+    fit.homogen <- buildLASSOClassifier(x=h$x, y=h$y, nfold=10)
+    
+    # Report generation and saving of results
+    w <- getWeights(fit.cv=fit.homogen, scale.weights=F) # compute weights
+    r <- getRatios(x=h$x, h$y) # compute ratios
+    generateReport(weights=w, ratios=r, out=report.name) # write results
+    save(list=ls(), file=paste(proj.name, '.RData', sep='')) # save local variables.
+  }
+}
+
 toPredictionVector <- function(x, y, iter=1, nfold=5) {
   # A prediction matrix is the result of iteratively (and randomly) building 
   # classifiers and deriving predictions of each observation.
