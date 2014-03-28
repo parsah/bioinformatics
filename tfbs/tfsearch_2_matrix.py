@@ -11,21 +11,6 @@ from collections import OrderedDict
 ENTRY_QUALIFIER = '::'  # valid tfSearch outputs contain the '::' string
 
 
-def normalize(m):
-    '''
-    Length-normalize each entry in the count matrix.
-    @param m: Count matrix.
-    '''
-    colnames = list(m.keys())
-    invalid_cols = ['Sequence', 'Length', 'Target']
-    for col in colnames:
-        if col not in invalid_cols:
-            col_data = m[col]
-            for rownum, count in enumerate(col_data):
-                length = m['Length'][rownum]
-                m[col][rownum] = count / float(length)
-
-
 def get_count(s):
     '''
     Extracts the numerical count of a PWM in any given tfSearch output string.
@@ -126,8 +111,6 @@ if __name__ == '__main__':
         control = parse(f=args['control'])
         query = parse(f=args['query'])
         m = build_matrix(control, query)
-        if args['norm']:
-            normalize(m)  # performing length normalization
         write_matrix(m, args['out'])
     except KeyboardInterrupt:
         print()

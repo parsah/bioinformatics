@@ -9,10 +9,11 @@ from collections import OrderedDict
 COLNAME_SEQ = 'Sequence'
 COLNAME_TARGET = 'Target'
 
+
 def build_skeleton(in_files):
-    pwms = set() # ordering is not important
+    pwms = set()  # ordering is not important
     all_seqs = []
-    
+
     # loop through both files to derive row-count
     for dataset in in_files:
         seqs = set()
@@ -23,17 +24,18 @@ def build_skeleton(in_files):
                 pwms.add(pwm)
                 seqs.add(seq)
         all_seqs.extend(seqs)
-    
+
     # wrap counts in a DataFrame
     m = OrderedDict({COLNAME_SEQ: all_seqs})
     m.update({pwm: [0] * len(all_seqs) for pwm in pwms})
     m.update({COLNAME_TARGET: ['None'] * len(all_seqs)})
     df = pandas.DataFrame(m, index=all_seqs)
-    return df # return dataframe capturing the matrix
+    return df  # return dataframe capturing the matrix
+
 
 def write(df, csv):
     for i, seq in enumerate(df[COLNAME_SEQ]):
-        seq = df[COLNAME_SEQ][i] 
+        seq = df[COLNAME_SEQ][i]
         # replace unique delimiters so both control and query sequences
         # share possible sub-sequences., i.e. match.chr1.111.553
         # is related to chr1.111.553, and so on.
@@ -47,18 +49,18 @@ def populate(df, in_files):
             if linenum != 0:
                 line = line.strip().split('\t')
                 pwm, seq = line[0: 2]
-                df[pwm][seq] += 1 # increment sequence-PWM count
+                df[pwm][seq] += 1  # increment sequence-PWM count
                 df[COLNAME_TARGET][seq] = i
-    return df # contains actual counts
+    return df  # contains actual counts
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-query', required=True, metavar='FILE',
                         help='FIMO --text mode output; query [req]')
-    
+
     parser.add_argument('-control', metavar='FILE',
                         help='FIMO --text mode output; control [optional]')
-    
+
     parser.add_argument('-csv', metavar='FILE', default='./out.csv',
                         help='Output file [./out.csv]')
     args = vars(parser.parse_args())
@@ -70,4 +72,4 @@ if __name__ == '__main__':
         df = populate(df, files)
         write(df, args['csv'])
     except AssertionError as e:
-        print('Query and control files cannot have shared sequence IDs [error].')
+        print('Query and control files cannot have shared IDs [error].')
