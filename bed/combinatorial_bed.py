@@ -176,7 +176,7 @@ class BEDNetworkBuilder():
 
         @param outdir: Output folder for saving file to.
         '''
-        cols = ['Node', 'Num.Enhancers', 'Depth'] + self.enum.get_features()
+        cols = ['Index', 'Node', 'Num.Enhancers', 'Depth'] + self.enum.get_features()
         idx = list(range(len(self.enum.get_combinations())))  # rows
 
         # per combination, derive its attributes for further analysis.
@@ -185,6 +185,7 @@ class BEDNetworkBuilder():
         for rownum, comb in enumerate(self.enum.get_combinations().values()):
             comb_name = NODE_DELIM.join(comb.columns)
             comb_depth = comb_name.count(NODE_DELIM) + 1
+            df.loc[rownum, 'Index'] = rownum + 1 # index each node
             df.loc[rownum, 'Node'] = comb_name  # set column values
             df.loc[rownum, 'Num.Enhancers'] = comb.shape[0]
             df.loc[rownum, 'Depth'] = comb_depth
