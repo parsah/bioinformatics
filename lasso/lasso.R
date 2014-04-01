@@ -280,12 +280,20 @@ getWeights <- function(fit.cv, scale.weights=T) {
   #
   # Returns:
   #   weights: Dataframe of attributes and their respective weights.
-
+  
   m <- as.matrix(coef(fit.cv, s=min(fit.cv$lambda)))
   if (scale.weights) { # standardize LASSO weights, if sought.
-    avg <- mean(m)
-    stdev <- sd(m)
-    m <- ((m - avg) / stdev)
+    weights.min <- min(m)
+    weights.max <- max(m)
+    for (i in 1: length(m)) {
+      val <- m[i, 1] # retrieve the current value
+      if (val < 0) { # normalize weights less than zero
+        m[i, 1] <- -1 * ( 1 - ( ( val - weights.min ) / -weights.min ) )
+      }
+      else { # normalize weights greater-than or equal to zero
+        m[i, 1] <- val / weights.max # maximum weight is set to 1.0
+      }
+    }
   }
   
   m <- as.matrix(m[order(row.names(m)), ]) # order weights by row-name

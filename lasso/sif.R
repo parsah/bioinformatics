@@ -143,7 +143,7 @@ parseReports <- function(...) {
   for (idx in 1:length(files)) {
     col.names <- cbind(col.names, basename(files[[idx]])) # save column names
     df <- read.csv(files[[idx]]) # read-in the respective report file.
-    df <- data.frame('Seq'=df$Seq, df$Importance) # pull-out important columns
+    df <- data.frame('Seq'=df$X, df$Importance) # pull-out important columns
     names(df)[2] <- paste(basename(files[[idx]]))
     list.files[[idx]] <- df # add data-frame to list for sorting    
   }
