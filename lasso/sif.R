@@ -117,6 +117,8 @@ orderMatrix <- function(x) {
   # Args:
   #   x: Matrix of dimensions i * j.
   #   ordered.mat: Ordered matrix of dimensions i * j.
+  # Returns:
+  #   ordered.mat: Integer-ranked matrix of dimensions i * j
   
   n.row <- dim(x)[1]; n.col <- dim(x)[2]
   ordered.mat <- matrix(nrow=n.row, ncol=n.col) # create matrix of NAs
