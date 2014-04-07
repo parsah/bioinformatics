@@ -1,6 +1,7 @@
 library("affy")
 library("plyr")
 library("reshape")
+library("RColorBrewer")
 
 orderMatrix <- function(x) {
   # Iteratively ranks a matrix given its respective columns.
@@ -130,4 +131,27 @@ normalizeMatrix <- function(x, constants) {
     norm.mat[, i] <- normalize.constant(x[, i], refconstant=constants[i])
   }
   return(norm.mat)
+}
+
+drawHeatmap <- function(x, k) {
+  # Draws a traditional 2-dimensional heatmap and generates
+  # a corresponding side-bar that helps cluster rows into
+  # respective groups.
+  #
+  # Args:
+  #   x: Matrix of dimensions i * j
+  #   k: Integer referencing the number of k-means clusters.
+  
+  distances <- dist(x, method='euclidean')
+  hclus <- hclust(distances) # cluster observations
+  clusters <- cutree(hclus, k)
+
+  # color rows into k clusters
+  cols <- colorRampPalette(brewer.pal(k,"Set3"))
+  clustcols = cols(k);
+  
+  # draw heatmap
+  heatmap.2(x, lhei=c(1, 6),RowSideColors=clustcols[clusters], cexRow=0.5,
+            col=colorRampPalette(c('orange', 'white', 'blue'))(100),
+            trace=NULL, Colv='none', tracecol=NA, density.info='none')
 }
