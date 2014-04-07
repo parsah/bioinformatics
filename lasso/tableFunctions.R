@@ -1,5 +1,6 @@
-library("reshape")
+library("affy")
 library("plyr")
+library("reshape")
 
 orderMatrix <- function(x) {
   # Iteratively ranks a matrix given its respective columns.
@@ -10,7 +11,8 @@ orderMatrix <- function(x) {
   # Returns:
   #   ordered.mat: Integer-ranked matrix of dimensions i * j
   
-  n.row <- dim(x)[1]; n.col <- dim(x)[2]
+  n.row <- dim(x)[1]
+  n.col <- dim(x)[2]
   ordered.mat <- matrix(nrow=n.row, ncol=n.col) # create matrix of NAs
   for (col.num in 1:n.col) { # iterate over each column.
     col <- x[, col.num]
@@ -73,7 +75,7 @@ parseReports <- function(...) {
   return(merged.m)
 }
 
-filterMatrix <- function(x, threshold=0.01) {
+pairElements <- function(x, threshold=0.01) {
   # Linearizes a matrix so that each specific individual element can be easily manipulated.
   #
   # Args:
@@ -87,4 +89,45 @@ filterMatrix <- function(x, threshold=0.01) {
   melt.m <- melt.m[melt.m$value >= threshold | melt.m$value <= -threshold, ]
   melt.m <- melt.m[melt.m$X1 != melt.m$X2, ] # remove paired correlations, eg. A and A.
   return(melt.m)
+}
+
+getTopObservations <- function(x, top.n=100) {
+  # Identifies the top N ranked values in a matrix. Values with
+  # a rank closer to 1 in any matrix column are saved, however
+  # all other values are set to 0. In doing so, any row with
+  # a row-sum of 0 is removed since no values across all its
+  # columns were ranked in the top N.
+  #
+  # Args:
+  #   x: Matrix of dimensions i * j
+  #   top.n: integer referencing the top N ranked values to keep.
+  #
+  # Returns:
+  #   list of top N values and their respective values.
+  
+  ordered.mat <- orderMatrix(x) # order and filter ranks
+  ordered.mat[ordered.mat > top.n] <- 0
+  values <- x[rowSums(ordered.mat) != 0, ]
+  colnames(values) <- seq(1, ncol(values))
+  return(list('values'=values, 'ordered.values'=orderMatrix(values)))
+}
+
+normalizeMatrix <- function(x, constants) {
+  # Normalizes an i * j matrix given a column-vector of j constants.
+  #
+  # Args:
+  #   x: Matrix of dimensions i * j
+  #   constants: Vector of constants of length j.
+  #
+  # Returns:
+  #   norm.mat: Normalized matrix of dimensions i * j.
+  
+  n.cols <- ncol(x)
+  norm.mat <- matrix(data=NA, ncol=ncol(x), nrow=nrow(x))
+  rownames(norm.mat) <- row.names(x)
+  colnames(x) <- seq(1, n.cols) # set column names
+  for (i in 1: n.cols) { # normalize each column.
+    norm.mat[, i] <- normalize.constant(x[, i], refconstant=constants[i])
+  }
+  return(norm.mat)
 }
