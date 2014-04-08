@@ -1,9 +1,0 @@
-numpy>=1.8.0
-python-dateutil
-pytz
-pandas
-biopython
-scipy
-scikit-learn
-networkx
-matplotlib
