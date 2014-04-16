@@ -1,5 +1,6 @@
 library("affy")
 library("plyr")
+library("gplots")
 library("reshape")
 library("RColorBrewer")
 
