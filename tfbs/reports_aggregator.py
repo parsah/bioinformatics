@@ -8,8 +8,6 @@ instance is saved.
 import pandas
 import argparse
 
-DELIM = '..'  # tfSearch PWM IDs are delimited by 2x periods.
-
 
 def parse_report(f):
     '''
