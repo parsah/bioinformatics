@@ -30,7 +30,7 @@ def get_ids(df):
     @param df: Parsed pandas data-frame.
     @return: list of PWM IDs.
     '''
-    ids = [a_id.rstrip('.').rstrip('..').split(DELIM)[-1] for a_id in df.index]
+    ids = [a_id for a_id in df.index]
     return sorted(set(ids))  # return sorted list of PWM IDs
 
 
@@ -49,7 +49,7 @@ def aggregate(df):
     for i in ids:
         int_locations = []
         for linenum, idx in enumerate(df.index):
-            if str(idx).endswith(DELIM + i + '.'):
+            if str(idx).endswith(i):
                 int_locations.append(linenum)
         df_subset = df.loc[int_locations]
         df_max = pandas.DataFrame(df_subset.max(axis=0))
