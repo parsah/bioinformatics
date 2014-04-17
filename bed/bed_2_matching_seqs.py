@@ -29,8 +29,8 @@ def get_n_perc(seq):
 def parse_bed(f, g):
     bed = {}
     for bed_entry in open(f):
-        key = '.'.join(bed_entry.strip().split('\s')[0:3])
-        line = bed_entry.strip().split('\s')
+        key = '.'.join(bed_entry.strip().split('\t')[0:3])
+        line = bed_entry.strip().split('\t')
         chrom, start, end = line[0], int(line[1]), int(line[2])
         seq = g[chrom][start: end]
         bed[key] = {'chrom': chrom, 'start': start,
