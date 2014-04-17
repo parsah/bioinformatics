@@ -19,12 +19,23 @@ def parse_fasta(f):
     return records
 
 
-def run_slidingwindow(f, w, o):
+def get_n_perc(seq):
+    ''' 
+    Derive the N % of a sequence.
+    @param seq: DNA sequence.
+    @return: percentage representing the N percentage.
+    '''
+    n_count = float(str(seq).upper().count('N'))
+    return n_count / len(seq) * 100
+
+
+def run_slidingwindow(f, w, o, n):
     '''
     Runs the logic of the sliding window algorithm with overlapping segments.
     @param f: User-provided input FASTA file.
     @param w: Sliding window size.
     @param o: Sliding window overlap size.
+    @param n: Hard-mask threshold; ignore sequences exceeding this value.
     '''
     entries = parse_fasta(f)
     for entry in entries:
@@ -32,16 +43,18 @@ def run_slidingwindow(f, w, o):
         d = entry.description  # sequence descriptor
         chunk1 = seq[0: w]  # the first chunk has no overlaps
         start, end = 0, w
-        print('>' + d + '|' + str(start) + '|' + str(end))
-        print(chunk1)
+        if get_n_perc(chunk1) < n:
+            print('>' + d + '|' + str(start) + '|w|' + str(w) + '|o|' + str(o))
+            print(chunk1)
         while True:
             start = end - o
             end = start + w
+            win = seq[start: end]
             if start > len(seq):
                 break
-            if start != len(seq):
+            if start != len(seq) and get_n_perc(win) < n:
                 print('>' + d + '|' + str(start) + '|w|' + str(w) + '|o|' + str(o))
-                print(seq[start: end])
+                print(win)
 
 if __name__ == '__main__':
     desc = 'Trivial sliding window algorithm with overlap amongst segments.'
@@ -52,10 +65,12 @@ if __name__ == '__main__':
                         default=100, type=int)
     parser.add_argument('-o', metavar='INT', help='Window overlap [30]',
                         default=30, type=int)
+    parser.add_argument('-n', metavar='INT', help='Ignore windows > N pct [50]',
+                        default=50, type=int)
     args = vars(parser.parse_args())
     try:
         if args['w'] <= args['o']:
             raise IOError('Window size must be > overlap size.')
-        run_slidingwindow(f=args['f'], w=args['w'], o=args['o'])
+        run_slidingwindow(f=args['f'], w=args['w'], o=args['o'], n=args['n'])
     except IOError as e:
         print(e)
