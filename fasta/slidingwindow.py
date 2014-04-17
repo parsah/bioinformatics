@@ -40,7 +40,7 @@ def run_slidingwindow(f, w, o):
             if start > len(seq):
                 break
             if start != len(seq):
-	        print('>' + d + '|' + str(start) + '|w|' + str(w) + '|o|' + str(o))
+                print('>' + d + '|' + str(start) + '|w|' + str(w) + '|o|' + str(o))
                 print(seq[start: end])
 
 if __name__ == '__main__':
