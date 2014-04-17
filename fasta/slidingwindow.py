@@ -39,8 +39,9 @@ def run_slidingwindow(f, w, o):
             end = start + w
             if start > len(seq):
                 break
-            print('>' + d + '|' + str(start) + '|w|' + str(w) + '|o|' + str(o))
-            print(seq[start: end])
+            if start != len(seq):
+	        print('>' + d + '|' + str(start) + '|w|' + str(w) + '|o|' + str(o))
+                print(seq[start: end])
 
 if __name__ == '__main__':
     desc = 'Trivial sliding window algorithm with overlap amongst segments.'
