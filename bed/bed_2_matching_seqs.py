@@ -29,8 +29,8 @@ def get_n_perc(seq):
 def parse_bed(f, g):
     bed = {}
     for bed_entry in open(f):
-        key = '.'.join(bed_entry.strip().split('\s')[0:3])
-        line = bed_entry.strip().split('\s')
+        key = '.'.join(bed_entry.strip().split('\t')[0:3])
+        line = bed_entry.strip().split('\t')
         chrom, start, end = line[0], int(line[1]), int(line[2])
         seq = g[chrom][start: end]
         bed[key] = {'chrom': chrom, 'start': start,
@@ -49,9 +49,10 @@ def is_match_n(query_n, control_n):
     return n_diff <= DIFF
 
 
-def run(bed, genome):
+def run(bed, genome, amplify):
     for bed_key in bed:
         bed_value = bed[bed_key]
+        hits = []
 
         # control cannot be from same chromosome as peak
         genome_chrom_names = list(genome.keys())
@@ -72,7 +73,10 @@ def run(bed, genome):
                 if is_match:
                     has_match = True
                     suitable_seq = cont_seq  # set the control sequence
-                    print('>matched.' + bed_key + '\n' + suitable_seq)
+                    hits.append(suitable_seq)
+                if len(hits) == amplify:  # amplify controls if need-be
+                    for num, i in enumerate(hits):
+                        print('>matched.' + bed_key + '.' + str(num+1) + '\n' + i)
                     break
 
 if __name__ == '__main__':
@@ -82,7 +86,7 @@ if __name__ == '__main__':
         else:
             genome = parse_genomes(d=sys.argv[2])
             bed_file = parse_bed(f=sys.argv[1], g=genome)
-            run(bed_file, genome)
+            run(bed_file, genome, int(sys.argv[3]))
     except IOError as e:
         print(e)
     except KeyboardInterrupt:
