@@ -1,11 +1,15 @@
 library("glmnet")
 
-parseClassifiable <- function(f) {
+parseClassifiable <- function(f, norm.constant=1) {
   # Parses a user-provided CSV file that is representative of a 
   # count matrix and returns its target vector and counts.
+  # Counts in the control-set can also be normalized; useful for
+  # instances in-which a signal-set is markebly smaller than
+  # its respective baseline.
   #
   # Args:
   #   f: Input CSV file.
+  #   norm.constant: Factor by-which control counts are divided by.
   #
   # Returns:
   #   x: Count matrix of dimensions i * j.
@@ -21,6 +25,7 @@ parseClassifiable <- function(f) {
   df$Sequence <- NULL # first column not needed
   x <- as.matrix(df) # everything else are PWM counts
   rownames(x) <- seqs
+  x[ y == 0, ] <- x[ y == 0, ] / norm.constant # normalize controls
   return(list('x'=x, 'y'=y)) # return matrix and target vector
 }
 
