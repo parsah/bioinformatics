@@ -50,9 +50,9 @@ def is_match_n(query_n, control_n):
 
 
 def run(bed, genome, amplify):
-    for bed_key in bed:
-        bed_value = bed[bed_key]
-        hits = []
+    for key in bed:
+        bed_value = bed[key]
+        hits = []  # references sequence(s) matching the BED entry.
 
         # control cannot be from same chromosome as peak
         genome_chrom_names = list(genome.keys())
@@ -75,8 +75,8 @@ def run(bed, genome, amplify):
                     suitable_seq = cont_seq  # set the control sequence
                     hits.append(suitable_seq)
                 if len(hits) == amplify:  # amplify controls if need-be
-                    for num, i in enumerate(hits):
-                        print('>matched.' + bed_key + '.' + str(num+1) + '\n' + i)
+                    for n, i in enumerate(hits):
+                        print('>matched.' + key + '.' + str(n + 1) + '\n' + i)
                     break
 
 if __name__ == '__main__':
