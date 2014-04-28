@@ -218,6 +218,7 @@ homogenize <- function(x, y, preds, threshold = 0.5) {
   new.query <- c() # create vector so rows can be added without matrix usage.
   new.control <- c() 
   names.query <-c() # references row-names as it is unknown which observations are/aren't valid.
+  names.control <- c()
   rownames.control <- row.names(control.counts)
   
   for (i in 1: nrow(query.counts)) {
@@ -233,17 +234,18 @@ homogenize <- function(x, y, preds, threshold = 0.5) {
       # in the case of small datasets, a query may not have a corresponding
       # control, thus handle instances whereby no match is found and add if so.
       if (length(match.pos) > 0) { # if query maps to control, get first hit.
-        control.name <- rownames.control[match.pos[1]] # fetch first hit only
-        #cat( '   ',control.name, '\n')
+        control.name <- as.matrix(rownames.control[match.pos[1: length(match.pos)]])
         new.control <- rbind(new.control, control.counts[match.pos, ]) # add its respective control.
+        names.control <- rbind(names.control, control.name) # add control name
       }
     }
   }
   
   rownames(new.query) <- names.query # add row-names to each data-frame.
+  rownames(new.control) <- names.control
   new.x <- rbind(new.query, new.control) # merge counts into new matrix
   new.y <- as.matrix(c(rep(1, nrow(new.query)), # build target vector
-                       rep(0, nrow(new.control))))
+                      rep(0, nrow(new.control))))
   return(list('x'=new.x, 'y'=new.y))
 }
 
