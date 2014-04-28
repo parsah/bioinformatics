@@ -83,7 +83,7 @@ getPValues <- function(x, y, adj.method="BH") {
   total.control <- sum(ratios[, 3]) # sum control column
   p.vals <- matrix(ncol=1, nrow=nrow(ratios)) # for storing p-values
   rownames(p.vals) <- rownames(ratios)
-
+  
   for (i in 1: nrow(ratios)) { # iteratively compute matrix p-value
     val.query <- ratios[i, 2]
     val.control <- ratios[i, 3]
@@ -106,14 +106,14 @@ runNaiveBuilder <- function(dir) {
   #
   # Args:
   #  dir: Folder with at least 1x classifiable file; see parseClassifiable.
-
+  
   setwd(dir) # set working directory to folder so files can be saved easily.
   contents <- list.files(path=dir, pattern=".csv$") # only get CSV files.
   for (i in 1: length(contents)) {
     csv.file <- contents[i] # references the current CSV file.
     proj.name <- gsub(".csv$", "", csv.file) # references RData, RHistory
     report.name <- gsub('.csv$', '_report.csv', csv.file) # report file
-
+    
     # Classifier construction and prediction
     cat('Processing', csv.file, '...\n')
     m <- parseClassifiable(f=csv.file)
@@ -186,7 +186,7 @@ generateReport <- function(weights, ratios, out='./report.csv') {
   imp <- weights * ratios[, 1] # importance => weight * ratio
   colnames(imp) <- c('Importance')
   report.mat <- cbind(weights, ratios, imp)
-
+  
   # test that row-names are shared between weights and ratios
   stopifnot(identical(rownames(weights), rownames(ratios)))
   write.csv(report.mat, out) # write merged martix to a file
@@ -218,14 +218,13 @@ homogenize <- function(x, y, preds, threshold = 0.5) {
   new.query <- c() # create vector so rows can be added without matrix usage.
   new.control <- c() 
   names.query <-c() # references row-names as it is unknown which observations are/aren't valid.
-  names.control <- c()
   rownames.control <- row.names(control.counts)
   
   for (i in 1: nrow(query.counts)) {
     query.name <- row.names(query.counts)[i]
     query.pred <- query.preds[i] # whether the query passes threshold
     match.pos <- grep(query.name, rownames.control, fixed=T) # vector of indices
-
+    
     # if query prediction is true, add control and query data-points.
     if (query.pred >= threshold) {
       new.query <- rbind(new.query, query.counts[i, ]) # add passed queries.
@@ -237,13 +236,11 @@ homogenize <- function(x, y, preds, threshold = 0.5) {
         control.name <- rownames.control[match.pos[1]] # fetch first hit only
         #cat( '   ',control.name, '\n')
         new.control <- rbind(new.control, control.counts[match.pos, ]) # add its respective control.
-        names.control <- rbind(names.control, control.name) # add control name
       }
     }
   }
   
   rownames(new.query) <- names.query # add row-names to each data-frame.
-  rownames(new.control) <- names.control
   new.x <- rbind(new.query, new.control) # merge counts into new matrix
   new.y <- as.matrix(c(rep(1, nrow(new.query)), # build target vector
                        rep(0, nrow(new.control))))

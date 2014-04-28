@@ -3,13 +3,16 @@
 
 import argparse
 import pandas
-import sklearn
+import time
+from sklearn import linear_model
+from sklearn import cross_validation
+from sklearn import metrics
 
 
 class MatrixParser():
     '''
     The MatrixParser class provides behaviors and states for parsing a matrix
-    CSV file. Such files must have their first column represent desired 
+    CSV file. Such files must have their first column represent desired
     observations. The very last column must explicitly represent a binary
     target vector (0, 1).
     '''
@@ -27,6 +30,7 @@ class MatrixParser():
         self.mat = pandas.read_csv(f)
         self.is_classifiable = is_classifiable
         self.sanity_check()
+        print('Matrix:', f)
 
     def sanity_check(self):
         '''
@@ -37,7 +41,6 @@ class MatrixParser():
         which references PWMs, and an explicitly-named target column that is
         the very last column in the file.
         '''
-        print('Sanity-checking matrix ...')
         cols = list(self.mat.columns)
         has_pwm = cols[0] == MatrixParser.COLNAME_PWM  # PWMs must be found.
         has_target = cols[-1] == MatrixParser.COLNAME_TARGET
@@ -71,7 +74,6 @@ class MatrixParser():
         cm = ClassifiableMatrix(self.mat)
         if cm.nrows() != cm.get_query().nrows() + cm.get_control().nrows():
             raise IOError('Error in matrix; ensure target is binary.')
-        cm.debug()
         return cm
 
 
@@ -150,7 +152,7 @@ class ClassificationFactory():
     desired objective and can be obtainable with the help of numerous
     runtime parameters such as cross-validation.
     '''
-    def __init__(self, m, iters, cv, thr, homogen):
+    def __init__(self, cm, iters, cv, thr, homogen):
         '''
         Creates a ClassificationFactory object, an object designed solely for
         classifying features based on the observation target vector.
@@ -160,11 +162,45 @@ class ClassificationFactory():
         @param thr: Predictive threshold cutoff.
         @param homogen: Whether to homogenize counts (see Taher, et. al, 2013).
         '''
-        self.m = m
+        assert isinstance(cm, ClassifiableMatrix)
+        self.cm = cm
         self.iters = iters
         self.cv = cv
         self.thr = thr
         self.homogenize = homogen
+
+    def classify(self):
+        '''
+        Perform classification using the object's ClassifiableMatrix object
+        and all classification-specific arguments. Based on how many
+        cross-validations are desired, classifiers are built and their
+        respective receiver operating characteristic (ROC) curve is
+        subsequently produced.
+        '''
+        print('Building cross-validated classifier ...')
+        x = self.cm.mat.drop(MatrixParser.COLNAME_TARGET, 1).values  # counts
+        y = self.cm.mat[MatrixParser.COLNAME_TARGET].values  # target vector
+        kf = cross_validation.StratifiedKFold(y, self.cv)
+
+        for i, (train_idx, test_idx) in enumerate(kf):
+            x_train, x_test = x[train_idx], x[test_idx]
+            y_train, y_test = y[train_idx], y[test_idx]
+            classifier = linear_model.LassoCV(normalize=True)
+            classifier.fit(x_train, y_train)
+            y_preds = classifier.predict(x_test)
+            fpr, tpr = metrics.roc_curve(y_test, y_preds)[: -1]
+            auc = metrics.auc(fpr, tpr)
+            print('[', time.strftime('%I:%M:%S'), '] # ', i + 1, 'of', len(kf), classifier.alpha_)
+            kf = cross_validation.StratifiedKFold(y, self.cv)
+        #model = linear_model.LassoCV(normalize=True)
+        #model.fit(x, y)
+        #print(model.alphas_, model.alpha_)
+
+    def get_weights(self):
+        df = pandas.DataFrame()
+        df['Weights'] = self.classifier.coef_
+        df = df.set_index(self.cm.mat.columns[0: -1])
+        df.to_csv('weights.csv')
 
 
 def main(args):
@@ -173,8 +209,10 @@ def main(args):
         m.parse()
         cm = m.to_classifiable_matrix()
         cm.normalize(n=args['amplify'])  # normalize controls if amplified.
-        cf = ClassificationFactory(m=cm, iters=args['iters'], cv=args['cv'],
+        cf = ClassificationFactory(cm=cm, iters=args['iters'], cv=args['cv'],
                                    thr=args['thr'], homogen=args['homogenize'])
+        cf.classify()
+        #cf.get_weights()
 
 if __name__ == '__main__':
     desc = 'LASSO classification and prediction.'
@@ -216,3 +254,5 @@ if __name__ == '__main__':
         print(e)
     except OSError as e:
         print(e)
+    except KeyboardInterrupt:
+        print()
