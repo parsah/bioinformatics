@@ -13,13 +13,29 @@ must be a valid feature.
 '''
 
 import argparse
-import bedutils
 import itertools
 import pandas
 import os
 
 FEATURE_START = 5  # column within BED file where entries begin from.
 NODE_DELIM = '---'  # delimiter for separating nodes.
+
+
+def parse_multibed(f):
+    '''
+    Parses a multiIntersectBed file; similar to a traditional BED file,
+    however a multiIntersectBed file is not only generated from bedtools but
+    also can contain header information of potential value when looking
+    at BED entry intersections.
+
+    @param f: BED filename.
+    @return: pandas data-frame referencing the BED file.
+    '''
+
+    df = pandas.read_table(f, sep='\s')
+    idx = df['chrom'] + '.' + df['start'].map(str) + '.' + df['end'].map(str)
+    df = df.set_index(idx)  # set index as chrom.start.end
+    return df
 
 
 def product(seq):
