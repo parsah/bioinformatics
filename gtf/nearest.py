@@ -8,6 +8,7 @@ e.g. pseudogene.
 
 import argparse
 import pandas
+import sys
 
 
 def parse_gtf(f, kw):
@@ -48,9 +49,42 @@ def parse_bed(f):
     idx = df[0] + '.' + df[1].map(str) + '.' + df[2].map(str)
     df = df.set_index(idx)  # set index as chrom.start.end
     df = df[[0, 1, 2]]
-    df.columns = ['chromosome', 'start', 'end']
+    df.columns = ['chrom', 'start', 'end']
     return df  # only focus on the first three important columnns
 
+
+def compute_nearest(bed, gtf):
+    '''
+    @param bed: parsed BED file from parse_bed.
+    @param gtf: parsed GTF file from parse_gtf.
+    '''
+    for row in bed.index:
+        row = bed.loc[row]
+        bed_chrom, bed_start, bed_end = row['chrom'], row['start'], row['end']
+        top_dist = sys.maxsize  # save the nearest distance
+        top_feat = None  # keep-track of the best feature
+
+        gtfs = gtf[bed_chrom]  # get GTF entries for the chromosome
+        for a_gtf in gtfs:
+            gtf_start, gtf_end = int(a_gtf[3]), int(a_gtf[4])
+
+            # compare distance between BED end and GTF start.
+            if abs(bed_end - gtf_start) <= top_dist:
+                top_dist = abs(bed_end - gtf_start)
+                top_feat = a_gtf
+
+            if abs(bed_end - gtf_end) <= top_dist:
+                top_dist = abs(bed_end - gtf_end)
+                top_feat = a_gtf
+
+            if abs(bed_start - gtf_start) <= top_dist:
+                top_dist = abs(bed_start - gtf_start)
+                top_feat = a_gtf
+
+            if abs(bed_start - gtf_end) <= top_dist:
+                top_dist = abs(bed_start - gtf_end)
+                top_feat = a_gtf
+        print('\t'.join([bed_chrom, bed_start, bed_end, top_dist] + top_feat))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -61,5 +95,9 @@ if __name__ == '__main__':
     parser.add_argument('-w', metavar='LIST', nargs='+', default=[],
                         help='Words to omit from GTF annotations [none]')
     args = vars(parser.parse_args())
-    gtf = parse_gtf(f=args['gtf'], kw=args['w'])
-    bed = parse_bed(f=args['bed'])
+    try:
+        gtf = parse_gtf(f=args['gtf'], kw=args['w'])
+        bed = parse_bed(f=args['bed'])
+        compute_nearest(bed, gtf)
+    except KeyboardInterrupt:
+        print()
