@@ -29,7 +29,7 @@ def parse_gtf(f, kw):
             chrom = 'chr' + chrom
 
         # test whether the source keyword is in the omitted keyword list
-        if source not in kw:
+        if source in kw:
             if chrom not in data:  # if chromosome is not in the dataset
                 data[chrom] = []
             data[chrom].append(i)
@@ -53,7 +53,7 @@ def parse_bed(f):
     return df  # only focus on the first three important columnns
 
 
-def compute_nearest(bed, gtf):
+def compute_nearest(bed, gtf, is_verbose=False):
     '''
     @param bed: parsed BED file from parse_bed.
     @param gtf: parsed GTF file from parse_gtf.
@@ -84,7 +84,12 @@ def compute_nearest(bed, gtf):
             if abs(bed_start - gtf_end) <= top_dist:
                 top_dist = abs(bed_start - gtf_end)
                 top_feat = a_gtf
-        print('\t'.join([bed_chrom, bed_start, bed_end, top_dist] + top_feat))
+        if is_verbose:
+            line = [bed_chrom, bed_start, bed_end, top_dist] + top_feat
+            line = [str(i) for i in line]
+        else:
+            line = [str(i) for i in [bed_chrom, bed_start, bed_end, top_dist]]
+        print(','.join(line))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -93,11 +98,13 @@ if __name__ == '__main__':
     parser.add_argument('-gtf', metavar='GTF', required=True,
                         help='GTF annotations file [req]')
     parser.add_argument('-w', metavar='LIST', nargs='+', default=[],
-                        help='Words to omit from GTF annotations [none]')
+                        help='Words to keep from GTF annotations [none]')
+    parser.add_argument('--verbose', default=False, action='store_true',
+                        help='Verbose output [false]')
     args = vars(parser.parse_args())
     try:
         gtf = parse_gtf(f=args['gtf'], kw=args['w'])
         bed = parse_bed(f=args['bed'])
-        compute_nearest(bed, gtf)
+        compute_nearest(bed, gtf, is_verbose=args['verbose'])
     except KeyboardInterrupt:
         print()
