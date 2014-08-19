@@ -1,7 +1,4 @@
-.classpath
-.project
-.pydevproject
-*.fasta
+.idea
 *.fa
 *.xml
 *.pyc
