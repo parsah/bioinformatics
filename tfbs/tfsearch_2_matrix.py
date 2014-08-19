@@ -1,8 +1,8 @@
-'''
+"""
 Takes both a query and control output file generated from running tfSearch
 and molds such data into a count-matrix that can be used for machine-learning
 and classification purposes.
-'''
+"""
 
 import argparse
 import pandas as pd
@@ -12,11 +12,11 @@ ENTRY_QUALIFIER = '::'  # valid tfSearch outputs contain the '::' string
 
 
 def get_count(s):
-    '''
+    """
     Extracts the numerical count of a PWM in any given tfSearch output string.
     @param s: tfSearch output string.
     @return: count representing PWM-count in a user-provided tfSearch string.
-    '''
+    """
     str_found = s[s.rfind(ENTRY_QUALIFIER):]
     str_found = str_found.replace(ENTRY_QUALIFIER, '').strip()
     num = str_found[0: str_found.find('(')]  # right-brace ends the count
@@ -24,10 +24,10 @@ def get_count(s):
 
 
 def parse(f):
-    '''
+    """
     Extract all PWMs shared across both query and control input files.
     @param files: List of both control and query input files.
-    '''
+    """
     d = {}  # key => accession, value => PWM and its respective count
     for i in open(f):
         i = i.strip()
@@ -43,14 +43,14 @@ def parse(f):
 
 
 def unique_pwms(control, query):
-    '''
+    """
     Extracts all PWMs which are shared across control and query parsed files.
     The end result is a collection representing all PWMs which serve as the
     columns of a count-matrix.
     @param control: Parsed control input file.
     @param query: Parsed query input file.
     @return: set of PWMs shared across both control and query input files.
-    '''
+    """
     union = set()
     for d in [control, query]:
         for accn in d:
@@ -67,14 +67,14 @@ def write_matrix(m, f):
 
 
 def build_matrix(control, query):
-    '''
+    """
     The matrix is such that you have n rows. Each row is a sequence from both
     the control and query datasets. Each PWM column, j, references a list of
     counts of length n. Thus, the index [ i , j ] can be used to retrieve the
     PWM-count in a given sequence.
     @param control: Parsed control input file.
     @param query: Parsed query input file.
-    '''
+    """
     colname_seq, colname_target = 'Sequence', 'Target'
     num_rows = len(control) + len(query)  # references number of sequences
     m = OrderedDict({colname_seq: [''] * num_rows})  # references strings

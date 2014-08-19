@@ -1,7 +1,7 @@
-'''
+"""
 Helpful script to sample a user-provided FASTA file using the uniform
 distribution. Such sampling takes place with replacement.
-'''
+"""
 
 import argparse
 import random
@@ -9,11 +9,11 @@ from Bio import SeqIO
 
 
 def sample(f, n):
-    '''
+    """
     Sample (with replacement) a user-provided FASTA file.
     @param f: User-provided FASTA file.
     @param n: Number of samples from the FASTA file to perform.
-    '''
+    """
     entries = list(SeqIO.parse(f, 'fasta'))
     for seqnum in range(n):
         loc = round(random.uniform(0, len(entries) - 1))

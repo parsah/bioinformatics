@@ -1,10 +1,10 @@
-'''
+"""
 Given both a BED file and a corresponding GTF file, this trivial script maps
 each BED entry to its nearest GTF. Such mapping is performed in a
 strand--independent manner. This script also enables filtering of keywords
 which may not be necessarily warranted to be part of the nearest derivation,
 e.g. pseudogene.
-'''
+"""
 
 import argparse
 import pandas
@@ -12,12 +12,12 @@ import sys
 
 
 def parse_gtf(f, kw):
-    '''
+    """
     Parse a user-provided GTF file.
     @param f: GTF filename.
     @param kw: keywords to omit if found in the source column.
     @return: hash referencing chromosome names and its entries.
-    '''
+    """
 
     data = {}  # key => chromosome name, values => chromosome entries.
     for i in open(f):
@@ -37,13 +37,13 @@ def parse_gtf(f, kw):
 
 
 def parse_bed(f):
-    '''
+    """
     Parses a user-provided BED file and only holds the first three critical
     columns (chromosome, start, and end).
 
     @param f: BED filename.
     @return: pandas data-frame referencing the BED file.
-    '''
+    """
 
     df = pandas.read_table(f, header=None, sep='\t')
     idx = df[0] + '.' + df[1].map(str) + '.' + df[2].map(str)
@@ -54,10 +54,10 @@ def parse_bed(f):
 
 
 def compute_nearest(bed, gtf, is_verbose=False):
-    '''
+    """
     @param bed: parsed BED file from parse_bed.
     @param gtf: parsed GTF file from parse_gtf.
-    '''
+    """
     for row in bed.index:
         row = bed.loc[row]
         bed_chrom, bed_start, bed_end = row['chrom'], row['start'], row['end']

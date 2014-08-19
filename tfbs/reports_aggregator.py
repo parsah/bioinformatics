@@ -1,39 +1,39 @@
-'''
+"""
 Since there is redundancy is many PWMs, there may be instances whereby one
 PWM variant is enriched at one instance but another. This script helps to
 identify which PWM variants are the most maximum so that this specific
 instance is saved.
-'''
+"""
 
 import pandas
 import argparse
 
 
 def parse_report(f):
-    '''
+    """
     Parses a LASSO Reports file generated using the /lasso/sif.R function.
 
     @param f: LASSO Reports csv file.
     @return: pandas data-frame.
-    '''
+    """
     df = pandas.read_csv(f)
     df = df.set_index('Unnamed: 0')  # PWMs are under an unnamed column
     return df
 
 
 def get_ids(df):
-    '''
+    """
     Gets all the unique PWM IDs since many PWMs exist with multiple variants.
 
     @param df: Parsed pandas data-frame.
     @return: list of PWM IDs.
-    '''
+    """
     ids = [a_id for a_id in df.index]
     return sorted(set(ids))  # return sorted list of PWM IDs
 
 
 def aggregate(df):
-    '''
+    """
     Identifies the maximum score assigned to each PWM variant and merges their
     scores into one centralized PWM vector. This vector is simply the PWM
     ID that is shared by all its variants. In doing so, the number of
@@ -41,7 +41,7 @@ def aggregate(df):
     entry. Output from each vector is saved locally as a CSV file.
 
     @param df: Parsed pandas data-frame
-    '''
+    """
     ids = get_ids(df)
     dfs = []
     for i in ids:

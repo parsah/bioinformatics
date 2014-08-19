@@ -1,42 +1,42 @@
-'''
+"""
 Scans a user-provided FASTA file using a user-defined sliding window width.
 Each chunks, however, has overlap much like scaffolding sequences. Such a
 scenario is useful for instances where you wish to perform genome-wide
 predictions on an entire genome.
-'''
+"""
 
 import argparse
 from Bio import SeqIO
 
 
 def parse_fasta(f):
-    '''
+    """
     Parses a user-provided FASTA file.
     @param f: FASTA file.
     @return: collection of FASTA entries.
-    '''
+    """
     records = SeqIO.parse(f, 'fasta')
     return records
 
 
 def get_n_perc(seq):
-    ''' 
+    """
     Derive the N % of a sequence.
     @param seq: DNA sequence.
     @return: percentage representing the N percentage.
-    '''
+    """
     n_count = float(str(seq).upper().count('N'))
     return n_count / len(seq) * 100
 
 
 def run_slidingwindow(f, w, o, n):
-    '''
+    """
     Runs the logic of the sliding window algorithm with overlapping segments.
     @param f: User-provided input FASTA file.
     @param w: Sliding window size.
     @param o: Sliding window overlap size.
     @param n: Hard-mask threshold; ignore sequences exceeding this value.
-    '''
+    """
     entries = parse_fasta(f)
     for entry in entries:
         seq = str(entry.seq)

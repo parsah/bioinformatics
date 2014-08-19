@@ -1,15 +1,15 @@
-'''
+"""
 Trivial script that enumerates frequency of properties in a GTF file.
-'''
+"""
 
 import argparse
 
 
 def run_summary(gtf):
-    '''
+    """
     Derives a summary of a user-provided GTF file; enumerates only the
     source column of the respective file.
-    '''
+    """
     data = {}
     for i in open(gtf):
         i = i.strip().split('\t')

@@ -1,7 +1,7 @@
-'''
+"""
 A very simple but helpful script for generating variable-length DNA sequences
 with a predefined GC percentage.
-'''
+"""
 
 import argparse
 import random
@@ -18,10 +18,10 @@ def validate_args(args):
 
 
 def output(seqs):
-    '''
+    """
     Prints all the random sequences be-they generated from adhoc or template
     arguments. The resultant sequences are sent to standard-out.
-    '''
+    """
     for i, seq in enumerate(seqs):
         # shuffle bases so that if a sequence with 0 GC% are not only AT dimers
         seq = list(seq)
@@ -30,13 +30,13 @@ def output(seqs):
 
 
 def adhoc_generator(n, l, gc):
-    '''
+    """
     Builds random sequences given GC content and length. This trivial function
     is designed for instances when analyzing promoter sequences of a query
     sequence set against a random baseline. If random sequences are desired to
     match GC content of a predefined set of sequences, use the
     template_generator(...) function instead.
-    '''
+    """
     num_seqs, seq_len, gc_perc = n, l, gc / 100.0
     seqs = []  # a list of all the generated random sequences
     for _ in range(num_seqs):

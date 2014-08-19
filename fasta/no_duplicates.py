@@ -1,6 +1,6 @@
-'''
+"""
 A simple hash-based script which only produces a set of unique FASTA entries.
-'''
+"""
 
 import argparse
 import hashlib
@@ -9,11 +9,11 @@ from Bio import SeqIO
 
 
 def process_seqs(fname):
-    '''
+    """
     For each sequence, compute a hash and test if this hash exists in our
     dictionary. If so, that respective sequence is a duplicate and therefore
     not represented as output.
-    '''
+    """
     hashes = set()
     records = SeqIO.parse(fname, 'fasta')
     for record in records:

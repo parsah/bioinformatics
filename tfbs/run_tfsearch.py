@@ -1,8 +1,8 @@
-'''
+"""
 Useful script for running tfSearch on a large input FASTA file.
 Each FASTA entry in the user-provided file is therefore executed against
 a user-provided PWM file using the tfSearch application.
-'''
+"""
 
 import subprocess
 import tempfile
@@ -11,11 +11,11 @@ from Bio import SeqIO
 
 
 def _exec_tfsearch(f, p):
-    '''
+    """
     Performs tfSearch on a one-entry FASTA file
     @param f: One-entry FASTA file.
     @param p: TRANSFAC PWMs.
-    '''
+    """
     proc = subprocess.Popen(["tfSearch", p, f], stdout=subprocess.PIPE)
     stdout, err = proc.communicate()
     if not err:
@@ -31,11 +31,11 @@ def _exec_tfsearch(f, p):
 
 
 def run_tfsearch(f, p):
-    '''
+    """
     Runs tfSearch given a FASTA file and set of PWMs
     @param f: Input FASTA file.
     @param p: Input TRANSFAC PWMs file.
-    '''
+    """
     records = SeqIO.parse(f, 'fasta')
     for record in records:  # iterate through each FASTA entry
         print('*** RUNNING ', record.id, '***')

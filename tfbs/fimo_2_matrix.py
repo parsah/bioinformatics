@@ -1,6 +1,6 @@
-'''
+"""
 Creates a count-matrix given FIMO output using its --text format.
-'''
+"""
 
 import argparse
 import pandas
