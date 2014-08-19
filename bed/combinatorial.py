@@ -1,4 +1,4 @@
-'''
+"""
 A base-bones BED file contains the chromosome ID and indices dedicated to
 its respective features. Oftentimes however, a BED entry could also store
 additional information such a matrix-like structure representing whether
@@ -10,7 +10,7 @@ entries are shared between different combinations of BED features.
 A root column is required. This root serves as the first node (parent)
 used to construct this data-structure. Every column from here-on
 must be a valid feature.
-'''
+"""
 
 import argparse
 import itertools
@@ -22,7 +22,7 @@ NODE_DELIM = '---'  # delimiter for separating nodes.
 
 
 def parse_multibed(f):
-    '''
+    """
     Parses a multiIntersectBed file; similar to a traditional BED file,
     however a multiIntersectBed file is not only generated from bedtools but
     also can contain header information of potential value when looking
@@ -30,7 +30,7 @@ def parse_multibed(f):
 
     @param f: BED filename.
     @return: pandas data-frame referencing the BED file.
-    '''
+    """
 
     df = pandas.read_table(f, sep='\s')
     idx = df['chrom'] + '.' + df['start'].map(str) + '.' + df['end'].map(str)
@@ -40,7 +40,7 @@ def parse_multibed(f):
 
 def product(seq):
 
-    '''
+    """
     Given a sequence (list), combinatorial sets within this collection
     are generated ranging from length 1 to the length of the list.
     Within this list will be a node which will serve as a 'root'. This
@@ -52,7 +52,7 @@ def product(seq):
 
     @param seq: Collection of objects.
     @return: set of valid combinations built around root combination.
-    '''
+    """
 
     combs = set()
     for rep in range(len(seq) - 1):
@@ -70,7 +70,7 @@ def product(seq):
 
 
 class MultiBEDEnumerator():
-    '''
+    """
     A MultiBEDEnumerator object is responsible for the parsing of
     multiIntersectBed files. Such files are essentially BED files
     whereby each entry references which other BED file a specific
@@ -78,35 +78,35 @@ class MultiBEDEnumerator():
     is measured by a binary (0, 1) value. Instantiations of this class
     therefore facilitate identification of all possible BED files
     and the set of BED entries within each such combination.
-    '''
+    """
 
     def __init__(self, f):
-        '''
+        """
         Constructs an object of type MultiBEDEnumerator.
 
         @param f: Input BED file generated from multiIntersectBED.
-        '''
-        self.df = bedutils.parse_multibed(f)  # BED from multiIntersectBed.
+        """
+        self.df = pandas.read_table(f, )  # BED from multiIntersectBed.
         self.combinations = {}  # K => combination, V => a data-frame.
         self.features = list(self.df.columns[FEATURE_START:])  # BED features.
 
     def debug(self):
-        '''
+        """
         Print-out important information about the BED file and which
         features are used for analysis.
-        '''
+        """
         print('Root feature:', self.df.columns[FEATURE_START])  # root feature
         print('All features:')  # show column numbers of all features
         for num, feature in enumerate(self.features):
             print(FEATURE_START + num, '=>', feature)
 
     def enumerate(self):
-        '''
+        """
         Analyzes the parsed data-frame and pulls-out columns that map to
         features within the BED file. Features are therefore enumerated so that
         you can discern how many items are mapped to each combination
         (beginning at the parent-most node which is the root).
-        '''
+        """
 
         self.debug()  # print helpful information
         print('Building feature combinations ...')
@@ -120,28 +120,28 @@ class MultiBEDEnumerator():
             self.combinations[comb] = df  # lastly, add to central list
 
     def get_combinations(self):
-        '''
+        """
         Return a dictionary of combinations and the data-frames that
         reference such combinations.
 
         @return: dictionary of combinations and data-frames.
-        '''
+        """
         return self.combinations
 
     def get_features(self):
-        '''
+        """
         Returns all features used for combinatorial analysis.
 
         @return: list of features.
-        '''
+        """
         return self.features
 
     def save(self, outdir):
-        '''
+        """
         Saves all the BED combinations to an output folder.
 
         @param outdir: User-provided output folder.
-        '''
+        """
         if not os.path.exists(outdir):  # create output folder
             os.mkdir(outdir)
 
@@ -180,7 +180,7 @@ class BEDNetworkBuilder():
         print('SIF file saved [OK]')
 
     def to_node_attrib(self, outdir):
-        '''
+        """
         Saves node properties to facilitate additional visualizations.
         This resultant properties file contains the node name, the number
         of enhancers this node references, and how many cell-lines make-up
@@ -191,7 +191,7 @@ class BEDNetworkBuilder():
         line not A, C, D, would have a score of 0.0.
 
         @param outdir: Output folder for saving file to.
-        '''
+        """
         cols = ['Index', 'Node', 'Num.Enhancers', 'Depth'] + self.enum.get_features()
         idx = list(range(len(self.enum.get_combinations())))  # rows
 

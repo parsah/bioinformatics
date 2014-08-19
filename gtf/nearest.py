@@ -11,7 +11,7 @@ import pandas
 import sys
 
 
-def parse_gtf(f, kw):
+def parse_gtf(f, kw=None):
     """
     Parse a user-provided GTF file.
     @param f: GTF filename.
