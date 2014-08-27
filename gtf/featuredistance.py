@@ -22,7 +22,6 @@ def compute_distance(df):
             chromosome_data = df[df['Chromosome'] == c].sort(['Start'])
             chromosome_data.index = range(0, chromosome_data.shape[0])
 
-
             for i in chromosome_data.index:
                 try:
                     if i != 0:
