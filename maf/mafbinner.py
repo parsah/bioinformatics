@@ -4,7 +4,7 @@ and corresponding organisms are extracted.
 """
 
 import sys
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 
 def __maf_to_features(line):
     line = list(filter(None, line.split(' ')))
@@ -53,7 +53,7 @@ if __name__ == '__main__':
             print('Arg1 => BED file')
             print('Arg2 => MAF file')
         else:
-            executor = ProcessPoolExecutor(8)
+            executor = ThreadPoolExecutor(8)
             maf_data = parse_maf(sys.argv[2])
             for bed_entry in open(sys.argv[1]):
                 bed_entry = bed_entry.strip().split('\t')
@@ -61,6 +61,7 @@ if __name__ == '__main__':
                 if bed_chromosome in maf_data:
                     future = executor.submit(map_intervals, bed_chromosome, bed_start, bed_end, maf_data[bed_chromosome])
                     future.add_done_callback(cb)
+            executor.shutdown()
     except KeyboardInterrupt:
         print()
     except KeyError as e:
