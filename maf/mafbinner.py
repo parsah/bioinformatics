@@ -19,6 +19,7 @@ def __maf_to_features(line):
     :param line: String representing a MAF file line.
     :return: organism, chromosome, and position MAF values.
     """
+
     line = list(filter(None, line.split(' ')))
     position = int(line[2])
     organism, chromosome = line[1].split('.')[0: 2]
@@ -35,6 +36,7 @@ def parse_maf(maf):
     :param maf: MAF file.
     :return: Dictionary referencing the parsed MAF file.
     """
+
     hg_chromosome = ''
     hg_position = 0
     contents = {}  # key => chromosome, value => {index: [list of organisms]}
@@ -64,6 +66,7 @@ def map_intervals(chromosome, start, end, maf):
     :param maf: Parsed MAF object; see parse_maf(...) function.
     :return:  BED chromosome, start, end, and all mapped organisms.
     """
+
     diff = end - start
     organisms = []
     for position in maf:
@@ -82,6 +85,7 @@ def cb(obj):
     Callback function for use during concurrent operations.
     :param obj: Object returned from map_intervals(...)
     """
+
     chromosome, start, end, organisms = obj.result()
     if len(organisms) > 0:
         for organism in organisms:
