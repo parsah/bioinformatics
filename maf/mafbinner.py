@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 CUTOFF = 0.75  # organisms must be in at least this much alignment blocks.
-
+HG19 = 'hg19'
 
 def __maf_to_features(line):
     """
@@ -47,14 +47,14 @@ def parse_maf(maf):
         if line.startswith('s'):
             value = __maf_to_features(line)
             if line.startswith('s hg'):
-                hg19_seq, hg_chromosome, hg_position, hg19 = value
+                global HG19
+                hg19_seq, hg_chromosome, hg_position, HG19 = value
                 if hg_chromosome not in contents:
                     contents[hg_chromosome] = {}
-                contents[hg_chromosome][hg_position] = {'sequence': hg19_seq, 'org_sequences': {}}
-                #print(hg19, hg_position, hg_chromosome)
+                contents[hg_chromosome][hg_position] = {HG19: hg19_seq}
             else:
                 organism_seq, org_chromosome, org_position, org = value
-                contents[hg_chromosome][hg_position]['org_sequences'][org] = organism_seq
+                contents[hg_chromosome][hg_position][org] = organism_seq
     return contents
 
 
@@ -75,10 +75,10 @@ def map_intervals(chromosome, start, end, maf):
     list_mapped_orgs = []  # list of successfully-mapped organisms.
     for position in maf:
         if (start - diff) < position < (end + diff):
-            hg_seq = maf[position]['sequence']  # get human sequence mapping to this region
-            organism_sequences = maf[position]['org_sequences']  # get all concordant sequences
+            organism_sequences = list(maf[position].keys())  # get all concordant sequences
             for org_name in organism_sequences:
-                org_seq = organism_sequences[org_name]
+                org_seq = maf[position][org_name]
+                hg_seq = maf[position][HG19]
                 perc_identity = sum([1.0 for i in range(len(hg_seq)) if hg_seq[i] ==  org_seq[i]]) / len(hg_seq)
                 if perc_identity >= CUTOFF:
                     list_mapped_orgs.append(org_name)
@@ -117,7 +117,7 @@ if __name__ == '__main__':
                 bed_chromosome, bed_start, bed_end = bed_entry[0], int(bed_entry[1]), int(bed_entry[2])
 
                 if bed_chromosome in maf_data:
-                    # map_intervals(bed_chromosome, bed_start, bed_end, maf_data[bed_chromosome])
+                    #print(map_intervals(bed_chromosome, bed_start, bed_end, maf_data[bed_chromosome]))
                     futures.append(executor.submit(map_intervals, bed_chromosome, bed_start, bed_end, maf_data[bed_chromosome]))
             for future in concurrent.futures.as_completed(futures):
                 prettify(future)
