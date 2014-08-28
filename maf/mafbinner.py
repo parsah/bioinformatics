@@ -23,8 +23,9 @@ def __maf_to_features(line):
 
     line = list(filter(None, line.split(' ')))
     position = int(line[2])
+    sequence = line[6]
     organism, chromosome = line[1].split('.')[0: 2]
-    return organism, chromosome, position
+    return sequence, chromosome, position, organism
 
 
 def parse_maf(maf):
@@ -44,14 +45,16 @@ def parse_maf(maf):
     for line in open(maf):
         line = line.strip()
         if line.startswith('s'):
+            value = __maf_to_features(line)
             if line.startswith('s hg'):
-                hg19, hg_chromosome, hg_position = __maf_to_features(line)
+                hg19_seq, hg_chromosome, hg_position, hg19 = value
                 if hg_chromosome not in contents:
                     contents[hg_chromosome] = {}
-                contents[hg_chromosome][hg_position] = set([hg19])  # each element is found in hg19 by default
+                contents[hg_chromosome][hg_position] = {'sequence': hg19_seq, 'org_sequences': {}}
+                #print(hg19, hg_position, hg_chromosome)
             else:
-                organism, org_chromosome, org_position = __maf_to_features(line)
-                contents[hg_chromosome][hg_position].add(organism)
+                organism_seq, org_chromosome, org_position, org = value
+                contents[hg_chromosome][hg_position]['org_sequences'][org] = organism_seq
     return contents
 
 
@@ -69,11 +72,17 @@ def map_intervals(chromosome, start, end, maf):
     """
 
     diff = end - start
-    organisms = []
+    list_mapped_orgs = []  # list of successfully-mapped organisms.
     for position in maf:
         if (start - diff) < position < (end + diff):
-            organisms.extend(maf[position])
-    valid_orgns = dict(Counter(organisms))  # enumerate organisms.
+            hg_seq = maf[position]['sequence']  # get human sequence mapping to this region
+            organism_sequences = maf[position]['org_sequences']  # get all concordant sequences
+            for org_name in organism_sequences:
+                org_seq = organism_sequences[org_name]
+                perc_identity = sum([1.0 for i in range(len(hg_seq)) if hg_seq[i] ==  org_seq[i]]) / len(hg_seq)
+                if perc_identity >= CUTOFF:
+                    list_mapped_orgs.append(org_name)
+    valid_orgns = dict(Counter(list_mapped_orgs))  # enumerate organisms.
     if len(valid_orgns) > 0:
         max_count = max(valid_orgns.values())  # find most frequenct organism
         valid_orgns = {k: float(valid_orgns[k])/max_count for k in valid_orgns}
@@ -101,12 +110,14 @@ if __name__ == '__main__':
             print('Arg2 => MAF file')
         else:
             futures = []
-            executor = ThreadPoolExecutor(2)
+            executor = ThreadPoolExecutor(1)
             maf_data = parse_maf(sys.argv[2])
             for bed_entry in open(sys.argv[1]):
                 bed_entry = bed_entry.strip().split('\t')
                 bed_chromosome, bed_start, bed_end = bed_entry[0], int(bed_entry[1]), int(bed_entry[2])
+
                 if bed_chromosome in maf_data:
+                    # map_intervals(bed_chromosome, bed_start, bed_end, maf_data[bed_chromosome])
                     futures.append(executor.submit(map_intervals, bed_chromosome, bed_start, bed_end, maf_data[bed_chromosome]))
             for future in concurrent.futures.as_completed(futures):
                 prettify(future)
