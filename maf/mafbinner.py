@@ -5,6 +5,7 @@ and corresponding organisms are extracted.
 
 import sys
 from collections import Counter
+import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
 
 
@@ -80,16 +81,17 @@ def map_intervals(chromosome, start, end, maf):
     return chromosome, start, end, valid_orgns
 
 
-def cb(obj):
+def prettify(future):
     """
     Callback function for use during concurrent operations.
-    :param obj: Object returned from map_intervals(...)
+    :param future: Futures object returned from map_intervals(...)
     """
 
-    chromosome, start, end, organisms = obj.result()
+    chromosome, start, end, organisms = future.result()
     if len(organisms) > 0:
         for organism in organisms:
-            print(chromosome + '\t' + str(start) + '\t' + str(end) + '\t' + str(organism))
+            sys.stdout.write(chromosome + '\t' + str(start) + '\t' + str(end) + '\t' + str(organism) + '\n')
+            sys.stdout.flush()
 
 
 if __name__ == '__main__':
@@ -98,15 +100,17 @@ if __name__ == '__main__':
             print('Arg1 => BED file')
             print('Arg2 => MAF file')
         else:
+            futures = []
             executor = ThreadPoolExecutor(2)
             maf_data = parse_maf(sys.argv[2])
             for bed_entry in open(sys.argv[1]):
                 bed_entry = bed_entry.strip().split('\t')
                 bed_chromosome, bed_start, bed_end = bed_entry[0], int(bed_entry[1]), int(bed_entry[2])
                 if bed_chromosome in maf_data:
-                    future = executor.submit(map_intervals, bed_chromosome, bed_start, bed_end, maf_data[bed_chromosome])
-                    future.add_done_callback(cb)
-            executor.shutdown()
+                    futures.append(executor.submit(map_intervals, bed_chromosome, bed_start, bed_end, maf_data[bed_chromosome]))
+            for future in concurrent.futures.as_completed(futures):
+                prettify(future)
+
     except KeyboardInterrupt:
         print()
     except KeyError as e:
