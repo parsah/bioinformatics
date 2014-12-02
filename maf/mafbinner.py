@@ -9,7 +9,7 @@ import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
 
 
-CUTOFF = 0.75  # organisms must be in at least this much alignment blocks.
+CUTOFF = 0.7  # organisms must be in at least this much alignment blocks.
 HG19 = 'hg19'
 
 def __maf_to_features(line):

@@ -23,7 +23,7 @@ def parse_genomes(d):
 
 
 def get_n_perc(seq):
-    return (str(seq).count('N') / len(seq)) * 100
+    return str(seq).count('N') / len(seq) * 100
 
 
 def parse_bed(f, g):
@@ -33,9 +33,10 @@ def parse_bed(f, g):
         line = bed_entry.strip().split('\t')
         chrom, start, end = line[0], int(line[1]), int(line[2])
         seq = g[chrom][start: end]
-        bed[key] = {'chrom': chrom, 'start': start,
-                         'end': end, 'seq': seq, 'gc_perc': round(GC(seq), 2),
-                         'n_perc': round(get_n_perc(seq), 2)}
+        if len(seq) > 0:  # in cases whereby BED indices exceed genome size entry.
+            bed[key] = {'chrom': chrom, 'start': start,
+                             'end': end, 'seq': seq, 'gc_perc': round(GC(seq), 2),
+                             'n_perc': round(get_n_perc(seq), 2)}
     return bed
 
 
